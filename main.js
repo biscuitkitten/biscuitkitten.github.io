@@ -234,7 +234,7 @@ var Beautify=function(val,floats)
 	//var output=formatter(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');
 	if (output=='0') negative=false;
 	if (Game.prefs.scinotation && Math.abs(val) >= 1000) {
-		let expon = Math.floor(Math.log10(val))
+		let expon = Math.floor(Math.log10(val)+(10**-10))
 		let dPlaces = 3
 		return Math.round((10**dPlaces)*val/10**(expon))/(10**dPlaces)+"e"+expon
 	}
