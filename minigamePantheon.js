@@ -479,9 +479,9 @@ M.launch=function()
 	M.logic=function()
 	{
 		//run each frame
-		var t=1000*60*60;
-		if (M.swaps==0) t=1000*60*60*16;
-		else if (M.swaps==1) t=1000*60*60*4;
+		var t=1000*60*60/Game.cheaterBoost;
+		if (M.swaps==0) t=1000*60*60*16/Game.cheaterBoost;
+		else if (M.swaps==1) t=1000*60*60*4/Game.cheaterBoost;
 		var t2=M.swapT+t-Date.now();
 		if (t2<=0 && M.swaps<3) {M.swaps++;M.swapT=Date.now();}
 		M.lastSwapT++;
@@ -502,9 +502,9 @@ M.launch=function()
 			}
 			l('templeGod'+M.dragging.id).style.transform='translate('+(x)+'px,'+(y)+'px)';
 		}
-		var t=1000*60*60;
-		if (M.swaps==0) t=1000*60*60*16;
-		else if (M.swaps==1) t=1000*60*60*4;
+		var t=1000*60*60/Game.cheaterBoost;
+		if (M.swaps==0) t=1000*60*60*16/Game.cheaterBoost;
+		else if (M.swaps==1) t=1000*60*60*4/Game.cheaterBoost;
 		var t2=M.swapT+t-Date.now();
 		if (Game.drawT%5==0) M.swapsL.innerHTML=loc("Worship swaps: %1",'<span class="titleFont" style="color:'+(M.swaps>0?'#fff':'#c00')+';">'+M.swaps+'/'+(3)+'</span>')+((M.swaps<3)?' ('+loc("next in %1",Game.sayTime((t2/1000+1)*Game.fps,-1))+')':'');
 	}

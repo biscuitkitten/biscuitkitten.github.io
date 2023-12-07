@@ -1238,7 +1238,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.1.2"
+Game.modVersion="0.2"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -2052,6 +2052,10 @@ Game.Launch=function()
 		Game.lumpT=Date.now();//time when the current lump started forming
 		Game.lumpRefill=0;//time left before a sugar lump can be used again (on minigame refills etc) in logic frames
 		
+		// BISCUITCLICKER
+		Game.buildingAutoDelayLevel=0;
+		Game.upgradeAutoDelayLevel=0;
+		
 		Game.makeSeed=function()
 		{
 			var chars='abcdefghijklmnopqrstuvwxyz'.split('');
@@ -2775,6 +2779,7 @@ Game.Launch=function()
 					if (Game.isMinigameReady(me)) str+=','+me.minigame.save(); else str+=','+(me.minigameSave||'');
 					str+=','+(me.muted?'1':'0');
 					str+=','+me.highest;
+					str+=','+String(me.auto.on)+','+String(me.auto.mode)+','+parseFloat(me.auto.threshA)+','+parseFloat(me.auto.threshB)
 					str+=';';
 				}
 			}
@@ -2826,8 +2831,10 @@ Game.Launch=function()
 			str+='|';
 			str+=Game.saveModData();
 			
-			str+='|';
+			str+='|'; // BISCUITCLICKER saving
 			str+= (type==3?'\n	cheater boost : ':'')+parseFloat(Game.cheaterBoost).toString()+';'
+			str+= (type==3?'\n	building automator speed levels : ':'')+parseInt(Game.buildingAutoDelayLevel).toString()+';'
+			str+= (type==3?'\n	upgrade automator speed levels : ':'')+parseInt(Game.upgradeAutoDelayLevel).toString()+';'
 			
 			Game.lastSaveData=str;
 			
@@ -3085,6 +3092,14 @@ Game.Launch=function()
 								me.muted=parseInt(mestr[5])||0;
 								Game.BuildingsOwned+=me.amount;
 								if (version<2.003) me.level=0;
+								if (mestr[10]) {
+									me.auto.on = (mestr[7] == "true")
+									Game.prefs["build"+i+"auto"] = (mestr[7] == "true")
+									me.auto.mode = (mestr[8] == "true")
+									Game.prefs["build"+i+"autoMode"] = (mestr[8] == "true")
+									me.auto.threshA = parseFloat(mestr[9])
+									me.auto.threshB = parseFloat(mestr[10])
+								}
 							}
 							else
 							{
@@ -3240,6 +3255,10 @@ Game.Launch=function()
 						spl=(str[10]||'').split(';'); // BISCUITCLICKER data
 						if(spl[0])
 							Game.cheaterBoost=parseFloat(spl[0]);
+						if(spl[1])
+							Game.buildingAutoDelayLevel=parseInt(spl[1]);
+						if(spl[2])
+							Game.upgradeAutoDelayLevel=parseInt(spl[2]);
 						
 						for (var i in Game.ObjectsById)
 						{
@@ -3358,6 +3377,7 @@ Game.Launch=function()
 								
 								var percent=5;
 								if (Game.Has('Offline Baker')) percent = 100;
+								if (Game.Has('Twin Gates of Transcendence')) percent+=5;
 								if (Game.Has('Angels')) percent+=10;
 								if (Game.Has('Archangels')) percent+=10;
 								if (Game.Has('Virtues')) percent+=10;
@@ -3372,6 +3392,7 @@ Game.Launch=function()
 								if (Game.Has('Ichor syrup')) percent+=7;
 								if (Game.Has('Fortune #102')) percent+=1;
 							}
+							if (percent > 100) percent = Math.round(100+(percent-100)**0.8) // Weaken offline production boost after 100%
 							
 							var timeOfflineOptimal=Math.min(timeOffline,maxTime);
 							var timeOfflineReduced=Math.max(0,timeOffline-timeOfflineOptimal);
@@ -5197,7 +5218,7 @@ Game.Launch=function()
 			Game.computedAutoCps=0;
 			
 			if (Game.Has('Autoclick switch [off]')) { 
-				Game.computedAutoCps = 1+(Game.Objects.Cursor.amount/100)
+				Game.computedAutoCps = 1+(Game.Objects["Cursor"].amount/100)
 			
 				if (Game.Has('Autoclick v1.1')) Game.computedAutoCps += 0.5
 				if (Game.Has('Autoclick v1.2')) Game.computedAutoCps += 0.5
@@ -5206,7 +5227,7 @@ Game.Launch=function()
 				if (Game.Has('Autoclick v1.5')) Game.computedAutoCps += 0.5
 				if (Game.Has('Autoclick v1.6')) Game.computedAutoCps += 0.5
 				
-				Game.computedAutoCps *= 1+(Game.Objects.Cursor.level/100)
+				Game.computedAutoCps *= 1+(Game.Objects["Cursor"].level/100)
 				
 				
 				
@@ -5218,6 +5239,8 @@ Game.Launch=function()
 				if (Game.computedAutoCps > 10) Game.computedAutoCps = 10*((Game.computedAutoCps/10)**0.5) // softcap
 				if (Game.computedAutoCps > 100) Game.computedAutoCps = 100 // hardcap
 			}
+			
+			// Auto delays
 			
 		}
 		
@@ -6434,7 +6457,7 @@ Game.Launch=function()
 		Game.removeClass=function(what) {var i=Game.cssClasses.indexOf(what);if(i!=-1) {Game.cssClasses.splice(i,1);}Game.updateClasses();}
 		Game.updateClasses=function() {Game.l.className=Game.cssClasses.join(' ');}
 		
-		Game.WritePrefButton=function(prefName,button,on,off,callback,invert)
+		Game.WritePrefButton=function(prefName,button,on,off,callback,invert,light)
 		{
 			var invert=invert?1:0;
 			if (!callback) callback='';
@@ -6663,6 +6686,7 @@ Game.Launch=function()
 			}
 			if (Game.onMenu=='prefs')
 			{
+
 				str+='<div class="section">'+loc("Options")+'</div>';
 				
 				str+=
@@ -6721,13 +6745,18 @@ Game.Launch=function()
 						'<div class="listing">'+Game.WritePrefButton('autosave','autosaveButton','Autosave ON','Autosave OFF')+'<label>('+loc("autosave the game every minute or so")+')</label><br>'+'</div>'+
 						'<div class="listing">'+Game.WritePrefButton('offprog','offprogButton','Offline Progress ON','Offline Progress OFF')+'<label>('+loc("earn cookies offline (if applicable)")+')</label><br>'+'</div>'+
 						'<div class="listing">'+Game.WritePrefButton('newsticker','newstickerButton','News Ticker ON','News Ticker OFF')+'<label>('+loc("display news blurbs")+')</label><br>'+'</div>'+
-						'<div class="listing">'+Game.WritePrefButton('scinotation','scinotationButton','Scientific Notation ON','Scientific Notation OFF')+'<label>('+loc("show numbers in scientific notation")+')</label><br>'+'</div>'+
+						'<div class="listing">'+Game.WritePrefButton('scinotation','scinotationButton','Scientific Notation ON','Scientific Notation OFF','BeautifyAll();Game.RefreshStore();Game.upgradesToRebuild=1;')+'<label>('+loc("show numbers in scientific notation")+')</label><br>'+'</div>'+
 						//(!App?'<div class="listing"><a class="option smallFancyButton" '+Game.clickStr+'="Game.CheckModData();PlaySound(\'snd/tick.mp3\');">'+loc("Check mod data")+'</a><label>('+loc("view and delete save data created by mods")+')</label></div>':'')+
 						
 						'</div>'+
 					'</div>'+
+					
+					// BISCUITCLICKER
+					
+					(Game.AutomationUnlocked() ? Game.AutomText() : "")+
+					
 				'</div>';
-				
+								
 				if (App && App.writeModUI)
 				{
 					str+=
@@ -7852,6 +7881,13 @@ Game.Launch=function()
 				this.refresh();
 			}
 			
+			// BISCUITCLICKER
+			this.auto = {}
+			this.auto.on = false
+			this.auto.mode = false
+			this.auto.threshA = 1000
+			this.auto.threshB = 10
+			
 			this.getPrice=function(n)
 			{
 				var price=this.basePrice*Math.pow(Game.priceIncrease,Math.max(0,this.amount-this.free));
@@ -8168,7 +8204,12 @@ Game.Launch=function()
 				
 				if (me.single == "cursor" && Game.Has('True Autoclick')) bonusInfo = "</b> and <b>+"+Beautify(me.level)+"% Autoclick Switch power"
 				
-				return '<div style="width:280px;padding:8px;" id="tooltipLevel"><b>'+loc("Level %1 %2",[Beautify(me.level),me.plural])+'</b><div class="line"></div>'+(EN?((me.level==1?me.extraName:me.extraPlural).replace('[X]',Beautify(me.level))+' granting <b>+'+Beautify(me.level)+'% '+me.dname+' CpS'+bonusInfo+'</b>.'):loc("Granting <b>+%1% %2 CpS"+bonusInfo+"</b>.",[Beautify(me.level),me.single]))+'<div class="line"></div>'+loc("Click to level up for %1.",'<span class="price lump'+(Game.lumps>=me.level+1?'':' disabled')+'">'+loc("%1 sugar lump",LBeautify(me.level+1))+'</span>')+((me.level==0 && me.minigameUrl)?'<div class="line"></div><b>'+loc("Levelling up this building unlocks a minigame.")+'</b>':'')+'</div>';
+				return '<div style="width:280px;padding:8px;" id="tooltipLevel"><b>'+loc("Level %1 %2",[Beautify(me.level),me.plural])+'</b><div class="line"></div>'+(EN?((me.level==1?me.extraName:me.extraPlural).replace('[X]',Beautify(me.level))+' granting <b>+'+Beautify(me.level)+'% '+me.dname+' CpS'+bonusInfo+'</b>.'):loc("Granting <b>+%1% %2 CpS"+bonusInfo+"</b>.",[Beautify(me.level),me.single]))+'<div class="line"></div>'+loc("Click to level up for %1.",'<span class="price lump'+(Game.lumps>=me.level+1?'':' disabled')+'">'+loc("%1 sugar lump",LBeautify(me.level+1))+'</span>')
+				+((me.level==0 && me.minigameUrl)?'<div class="line"></div><b>'+loc("Levelling up this building unlocks a minigame.")+'</b>':'')+
+				
+				((me.level==4)?'<div class="line"></div><b>'+loc("Levelling up this building unlocks an autobuyer for it.")+'</b>':'')+
+				
+				'</div>';
 			}
 			this.levelUp=function(me){
 				return function(free){Game.spendLump(me.level+1,loc("level up your %1",me.plural),function()
@@ -10161,7 +10202,7 @@ Game.Launch=function()
 		
 		order=150;
 		new Game.Upgrade('Plastic mouse',getStrClickingGains(1)+'<q>Slightly squeaky.</q>',50000,[11,0]);Game.MakeTiered(Game.last,1,11);
-		new Game.Upgrade('Iron mouse',getStrClickingGains(1)+'<q>Click like it\'s 1349!</q>',5000000,[11,1]);Game.MakeTiered(Game.last,2,11);
+		new Game.Upgrade('Iron mouse',getStrClickingGains(1)+'<q>Click like it\'s 13\b49!</q>',5000000,[11,1]);Game.MakeTiered(Game.last,2,11);
 		new Game.Upgrade('Titanium mouse',getStrClickingGains(1)+'<q>Heavy, but powerful.</q>',500000000,[11,2]);Game.MakeTiered(Game.last,3,11);
 		new Game.Upgrade('Adamantium mouse',getStrClickingGains(1)+'<q>You could cut diamond with these.</q>',50000000000,[11,13]);Game.MakeTiered(Game.last,4,11);
 		
@@ -12431,8 +12472,8 @@ Game.Launch=function()
 		
 		order=160;
 		new Game.Upgrade('True Autoclick',"Unlock the <b>Autoclick Switch</b>, which passively clicks the cookie for you but disables manual clicking.<br>(Base clicks/s is 1 plus 1% for every owned Cursor.)<q>Why click by hand when you have all these perfectly good cursors to do it for you?</q>",1000,[37,0],function(){})
-		new Game.Upgrade('Autoclick v1.1',"The Autoclick Switch gains +0.5 base clicks/s and clicks 10% faster.",10**6,[37,1],function(){})	
-		new Game.Upgrade('Autoclick v1.2',"The Autoclick Switch gains +0.5 base clicks/s and clicks 10% faster.",10**9,[37,2],function(){})	
+		new Game.Upgrade('Autoclick v1.1',"The Autoclick Switch gains +0.5 base clicks/s.",10**6,[37,1],function(){})	
+		new Game.Upgrade('Autoclick v1.2',"The Autoclick Switch gains +0.5 base clicks/s.",10**9,[37,2],function(){})	
 		
 		order=40100;
 		
@@ -12445,7 +12486,11 @@ Game.Launch=function()
 		Game.last.priceFunc=function(){return Game.cookiesPs*60;}
 		
 		
-		
+		order=160;
+		new Game.Upgrade('Autoclick v1.3',"The Autoclick Switch gains +0.5 base clicks/s.",10**12,[37,3],function(){})	
+		new Game.Upgrade('Autoclick v1.4',"The Autoclick Switch gains +0.5 base clicks/s.",10**15,[37,4],function(){})			
+		new Game.Upgrade('Autoclick v1.5',"The Autoclick Switch gains +0.5 base clicks/s.",10**18,[37,5],function(){})			
+		new Game.Upgrade('Autoclick v1.6',"The Autoclick Switch gains +0.5 base clicks/s.",10**21,[37,6],function(){})			
 		
 		
 		
@@ -16589,11 +16634,15 @@ Game.Launch=function()
 				if (Game.cookiesEarned>=10) Game.Unlock('Offline Baker');
 				
 				// autoclicker built-in to the game
-				if (Game.Objects.Cursor.amount>=10) Game.Unlock('True Autoclick');
+				if (Game.Objects["Cursor"].amount>=10) Game.Unlock('True Autoclick');
 				if (Game.Has('True Autoclick')) Game.Unlock('Autoclick switch [off]');
 				
-				if (Game.Has('True Autoclick') && Game.Objects.Cursor.amount>=50) Game.Unlock('Autoclick v1.1');
-				if (Game.Has('True Autoclick') && Game.Objects.Cursor.amount>=100) Game.Unlock('Autoclick v1.2');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=50) Game.Unlock('Autoclick v1.1');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=100) Game.Unlock('Autoclick v1.2');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=200) Game.Unlock('Autoclick v1.3');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=300) Game.Unlock('Autoclick v1.4');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=400) Game.Unlock('Autoclick v1.5');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=500) Game.Unlock('Autoclick v1.6');
 				
 				// stinky cheater
 				if (Game.cheaterBoost > 1) Game.Win('Cheated cookies taste awful')
@@ -16720,6 +16769,13 @@ Game.Launch=function()
 		}
 		
 		if (App && App.logic) App.logic(Game.T);
+		
+		
+		// BISCUITCLICKER LOGIC
+		// TODO would also like to add bulk buy feature for building autobuyers
+		if (Game.T%(Math.round(Game.fps*Game.BADelay()))==0) Game.DoBuildingAutobuyers();
+		if (Game.T%(Math.round(Game.fps*Game.UADelay()))==0) Game.DoUpgradeAutobuyers();
+		
 		
 		//every hour: get server data (ie. update notification, patreon, steam etc)
 		//if (Game.T%(Game.fps*60*60)==0 && Game.T>Game.fps*10/* && Game.prefs.autoupdate*/) {Game.CheckUpdates();Game.GrabData();}
@@ -16944,6 +17000,153 @@ var AutoclickSwitch = setInterval(function(){
 	  }
   }
 }, AcS_UpdRate);
+
+// TODO change to using ObjectsById
+let objNames = ["Cursor", "Grandma", "Farm", "Mine", "Factory", "Bank", "Temple", "Wizard tower", "Shipment", "Alchemy lab", "Portal", "Time machine", "Antimatter condenser", "Prism", "Chancemaker", "Fractal engine", "Javascript console", "Idleverse", "Cortex baker", "You"]
+let objNamesPl = ["Cursors", "Grandmas", "Farms", "Mines", "Factories", "Banks", "Temples", "Wizard towers", "Shipments", "Alchemy labs", "Portals", "Time machines", "Antimatter condensers", "Prisms", "Chancemakers", "Fractal engines", "Javascript consoles", "Idleverses", "Cortex bakers", "You"]
+
+Game.AutomationUnlocked = function() {
+	return Game.Objects[objNames[0]].level >= 5 ||
+		Game.Objects[objNames[1]].level >= 5 ||
+		Game.Objects[objNames[2]].level >= 5 ||
+		Game.Objects[objNames[3]].level >= 5 ||
+		Game.Objects[objNames[4]].level >= 5 ||
+		Game.Objects[objNames[5]].level >= 5 ||
+		Game.Objects[objNames[6]].level >= 5 ||
+		Game.Objects[objNames[7]].level >= 5 ||
+		Game.Objects[objNames[8]].level >= 5 ||
+		Game.Objects[objNames[9]].level >= 5 ||
+		Game.Objects[objNames[10]].level >= 5 ||
+		Game.Objects[objNames[11]].level >= 5 ||
+		Game.Objects[objNames[12]].level >= 5 ||
+		Game.Objects[objNames[13]].level >= 5 ||
+		Game.Objects[objNames[14]].level >= 5 ||
+		Game.Objects[objNames[15]].level >= 5 ||
+		Game.Objects[objNames[16]].level >= 5 ||
+		Game.Objects[objNames[17]].level >= 5 ||
+		Game.Objects[objNames[18]].level >= 5 ||
+		Game.Objects[objNames[19]].level >= 5 ||
+		false
+}
+
+Game.AutomText = function() {
+	return ''+		
+	
+	'<div class="block" style="padding:0px;margin:8px 4px;">'+
+		'<div class="subsection" style="padding:0px;">'+
+			'<div class="title">'+loc("Automation")+'</div>'+
+			
+			
+			'<div class="listing"><label>Your current building autobuyer interval is '+Game.BADelay()+' seconds.</label>'+
+			
+			'<a class="option smallFancyButton" '+Game.clickStr+'="BuyBAIUpg();PlaySound(\'snd/tick.mp3\');">'+loc("Reduce this by 25%<br>for "+
+			Game.BAIUpgPrice()+" sugar lump"+(Game.BAIUpgPrice()!=1?"s":""))+
+			'</a>'+
+			
+			'</div>'+
+			
+			
+			Game.AutomTextBuilds()+
+			
+		'</div>'+
+	'</div>'+
+	
+	''
+}
+Game.AutomTextBuilds = function() {
+	var ret = ""
+	for (let i = 0; i < objNames.length; i++) {
+		let currOb = Game.Objects[objNames[i]]
+		if(currOb.level >= 5) {
+			ret += '<div class="listing">'+
+		
+			Game.WritePrefButton('build'+i+'auto','build'+i+'autoButton','Autobuy '+objNamesPl[i]+' ON','Autobuy '+objNamesPl[i]+' OFF',"Game.FlipAuto("+i+");")+
+			Game.WritePrefButton('build'+i+'autoMode','build'+i+'autoModeButton','Threshold mode: Cookies in bank','Threshold mode: Cookies per second','Game.DisableAuto('+i+');Game.UpdateAutomMode('+i+');Game.UpdateMenu();',0,false)+
+			'<input type="number" id="build'+i+'autoThresh" name="build'+i+'autoThresh" size="10" step="any" min="0" max="1000000" onchange="Game.ChangeAutomThresh('+i+');Game.UpdateMenu();" value="'+(currOb.auto.mode?currOb.auto.threshA:currOb.auto.threshB)+'"/>'+
+			
+			'<label>('+loc(
+	
+			(currOb.auto.mode?"Buy when your cookie amount is more than "+currOb.auto.threshA+"x the cost of the building":"Buy when building cost is less than "+currOb.auto.threshB+" seconds of raw CpS production")
+			
+			)+')</label>'+'</div><br>'
+		}
+	}
+	return ret
+}
+Game.DisableAuto = function(num) {
+	if (Game.Objects[objNames[num]].auto.on) {
+		l('build'+num+'autoButton').click()
+	}
+	
+}
+Game.FlipAuto = function(num) {
+	Game.Objects[objNames[num]].auto.on = !Game.Objects[objNames[num]].auto.on
+}
+Game.UpdateAutomMode = function(num) {
+	Game.Objects[objNames[num]].auto.mode = !Game.Objects[objNames[num]].auto.mode
+}
+Game.ChangeAutomThresh = function(num) {
+	let obAuto = Game.Objects[objNames[num]].auto
+	let theWhat = l("build"+num+"autoThresh")
+	if(theWhat)  {
+		var threshT = parseFloat(theWhat.value)
+		if (!isNaN(threshT)) {
+			threshT = Math.min(Math.max(threshT,0),1000000)
+			if(obAuto.mode)
+				obAuto.threshA = threshT
+			else
+				obAuto.threshB = threshT
+		}
+	}		
+}
+
+
+Game.DoBuildingAutobuyers = function() {
+	for (let i = 0; i < objNames.length; i++) {
+		let currOb = Game.Objects[objNames[i]]
+		let obAuto = currOb.auto
+		if(currOb.level >= 5 && obAuto.on) { // autobuyer is unlocked and enabled
+			if ((obAuto.mode && Game.cookies/obAuto.threshA > currOb.price) || (!obAuto.mode && Game.cookiesPs*obAuto.threshB > currOb.price)) {
+				if(Game.cookies > currOb.price)	{
+					console.log("AUTOBUY: "+objNames[i])
+					Game.ObjectsById[i].buy();
+				}
+			}
+		}
+	}
+}
+
+Game.DoUpgradeAutobuyers = function() {
+	return // TODO
+}
+
+Game.BAIUpgPrice = function() {
+	return 1*(2**Game.buildingAutoDelayLevel)
+}
+Game.UAIUpgPrice = function() {
+	return 1*(2**Game.upgradeAutoDelayLevel)
+}
+Game.BADelay = function() {
+	return Math.max(Math.round(10000*0.75**Game.buildingAutoDelayLevel)/1000,1/30);
+}
+Game.UADelay = function() {
+	return Math.max(Math.round(30000*0.75**Game.upgradeAutoDelayLevel)/1000,1/30);
+	
+}
+BuyBAIUpg = function() {
+	Game.spendLump(Game.BAIUpgPrice(),loc("reduce the building autobuyer interval by 25%"),function()
+	{
+		Game.buildingAutoDelayLevel++;
+		Game.UpdateMenu();
+	})();
+}
+BuyUAIUpg = function() {
+	Game.spendLump(Game.UAIUpgPrice(),loc("reduce the upgrade autobuyer interval by 25%"),function()
+	{
+		Game.upgradeAutoDelayLevel++;
+		Game.UpdateMenu();
+	})();
+}
 
 /*=====================================================================================
 LAUNCH THIS THING
