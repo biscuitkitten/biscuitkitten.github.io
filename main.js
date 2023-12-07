@@ -925,7 +925,12 @@ var PlaySound=function(url,vol,pitchVar)
 			sound.webkitPreservesPitch=false;
 			sound.playbackRate=rate;
 		}
-		try{sound.play();}catch(e){}
+		try{
+			sound.play();
+		}
+		catch(e){
+			console.log(1)
+		}
 		/*
 		var sound=Sounds[url].cloneNode();
 		sound.volume=Math.pow(volume*volumeSetting/100,2);
@@ -1989,7 +1994,7 @@ Game.Launch=function()
 		}
 		Game.clickStr=Game.touchEvents?'ontouchend':'onclick';
 		
-		l('versionNumber').innerHTML='v. '+Game.version+(!App?('<div id="httpsSwitch" style="cursor:pointer;display:inline-block;background:url(img/'+(Game.https?'lockOn':'lockOff')+'.png);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>'):'')+(Game.beta?' <span style="color:#ff0;">beta</span>':'');
+		l('versionNumber').innerHTML='v. '+Game.version+":BC"//+(!App?('<div id="httpsSwitch" style="cursor:pointer;display:inline-block;background:url(img/'+(Game.https?'lockOn':'lockOff')+'.png);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>'):'')+(Game.beta?' <span style="color:#ff0;">beta</span>':'');
 			
 		Game.lastActivity=Date.now();//reset on mouse move, key press or click
 		
@@ -2530,12 +2535,12 @@ Game.Launch=function()
 		
 		if (!App)
 		{
-			Game.attachTooltip(l('httpsSwitch'),'<div style="padding:8px;width:350px;text-align:center;font-size:11px;">'+loc("You are currently playing Cookie Clicker on the <b>%1</b> protocol.<br>The <b>%2</b> version uses a different save slot than this one.<br>Click this lock to reload the page and switch to the <b>%2</b> version!",[(Game.https?'HTTPS':'HTTP'),(Game.https?'HTTP':'HTTPS')])+'</div>','this');
+			/*Game.attachTooltip(l('httpsSwitch'),'<div style="padding:8px;width:350px;text-align:center;font-size:11px;">'+loc("You are currently playing Cookie Clicker on the <b>%1</b> protocol.<br>The <b>%2</b> version uses a different save slot than this one.<br>Click this lock to reload the page and switch to the <b>%2</b> version!",[(Game.https?'HTTPS':'HTTP'),(Game.https?'HTTP':'HTTPS')])+'</div>','this');
 			AddEvent(l('httpsSwitch'),'click',function(){
 				PlaySound('snd/pop'+Math.floor(Math.random()*3+1)+'.mp3',0.75);
 				if (location.protocol=='https:') location.href='http:'+window.location.href.substring(window.location.protocol.length);
 				else if (location.protocol=='http:') location.href='https:'+window.location.href.substring(window.location.protocol.length);
-			});
+			});*/
 			
 			AddEvent(l('changeLanguage'),'click',function()
 			{
