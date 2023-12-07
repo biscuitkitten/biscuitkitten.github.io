@@ -1238,6 +1238,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
+Game.modVersion="0.1.2"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -1994,7 +1995,7 @@ Game.Launch=function()
 		}
 		Game.clickStr=Game.touchEvents?'ontouchend':'onclick';
 		
-		l('versionNumber').innerHTML='v. '+Game.version+":BC"//+(!App?('<div id="httpsSwitch" style="cursor:pointer;display:inline-block;background:url(img/'+(Game.https?'lockOn':'lockOff')+'.png);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>'):'')+(Game.beta?' <span style="color:#ff0;">beta</span>':'');
+		l('versionNumber').innerHTML='v. '+Game.version+":BC_"+Game.modVersion//+(!App?('<div id="httpsSwitch" style="cursor:pointer;display:inline-block;background:url(img/'+(Game.https?'lockOn':'lockOff')+'.png);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>'):'')+(Game.beta?' <span style="color:#ff0;">beta</span>':'');
 			
 		Game.lastActivity=Date.now();//reset on mouse move, key press or click
 		
