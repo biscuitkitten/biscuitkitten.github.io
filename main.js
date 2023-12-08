@@ -234,9 +234,9 @@ var Beautify=function(val,floats)
 	//var output=formatter(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');
 	if (output=='0') negative=false;
 	if (Game.prefs.scinotation && Math.abs(val) >= 1000) {
-		let expon = Math.floor(Math.log10(val)+(10**-10))
+		let expon = Math.floor(Math.log10(val))
 		let dPlaces = 3
-		return Math.round((10**dPlaces)*val/10**(expon))/(10**dPlaces)+"e"+expon
+		return Math.floor((10**dPlaces)*val/10**(expon))/(10**dPlaces)+"e"+expon
 	}
 	return negative?'-'+output:output+decimal;
 }
@@ -1238,7 +1238,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.2"
+Game.modVersion="0.3"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -4998,6 +4998,7 @@ Game.Launch=function()
 			mult*=Game.eff('cps');
 			
 			//if (Game.Has('Heralds') && Game.ascensionMode!=1) mult*=(1+0.01*Game.heralds);
+			if (Game.Has('Heralds') && Game.ascensionMode!=1) mult*=(1+0.01*Game.heraldAscensionBoost());
 			
 			for (var i in Game.cookieUpgrades)
 			{
@@ -5755,7 +5756,6 @@ Game.Launch=function()
 				maxTime:0,
 				getTimeMod:function(me,m)
 				{
-					m /= Game.cheaterBoost; // golden cookies spawn faster based on cheater boost
 					if (Game.Has('Lucky day')) m/=2;
 					if (Game.Has('Serendipity')) m/=2;
 					if (Game.Has('Golden goose egg')) m*=0.95;
@@ -5798,6 +5798,7 @@ Game.Launch=function()
 							}
 						}
 					}
+					m /= Game.cheaterBoost; // golden cookies spawn faster based on cheater boost
 					if (this.chain>0) m=0.05;
 					if (Game.Has('Gold hoard')) m=0.01;
 					return Math.ceil(Game.fps*60*m);
@@ -7923,9 +7924,9 @@ Game.Launch=function()
 				return giveBack;
 			}
 			
-			this.buy=function(amount)
+			this.buy=function(amount,auto)
 			{
-				if (Game.buyMode==-1) {this.sell(Game.buyBulk,1);return 0;}
+				if (Game.buyMode==-1 && !auto) {this.sell(Game.buyBulk,1);return 0;}
 				var success=0;
 				var moni=0;
 				var bought=0;
@@ -9587,7 +9588,7 @@ Game.Launch=function()
 		}
 		
 		
-		Game.Upgrade.prototype.buy=function(bypass)
+		Game.Upgrade.prototype.buy=function(bypass,auto)
 		{
 			var success=0;
 			var cancelPurchase=0;
@@ -10707,7 +10708,7 @@ Game.Launch=function()
 		new Game.Upgrade('Seraphim',desc(10,65)+'<q>Leading the first sphere of pastry heaven, seraphim possess ultimate knowledge of everything pertaining to baking.</q>',Math.pow(angelPriceFactor,6),[5,11]);Game.last.pool='prestige';Game.last.parents=['Cherubim'];
 		new Game.Upgrade('God',desc(10,75)+'<q>Like Santa, but less fun.</q>',Math.pow(angelPriceFactor,7),[6,11]);Game.last.pool='prestige';Game.last.parents=['Seraphim'];
 		
-		new Game.Upgrade('Twin Gates of Transcendence',loc("You now <b>keep making cookies while the game is closed</b>, at the rate of <b>%1%</b> of your regular CpS and up to <b>1 hour</b> after the game is closed.<br>(Beyond 1 hour, this is reduced by a further %2% - your rate goes down to <b>%3%</b> of your CpS.)",[5,90,0.5])+'<q>This is one occasion you\'re always underdressed for. Don\'t worry, just rush in past the bouncer and pretend you know people.</q>',1,[15,11]);Game.last.pool='prestige';
+		new Game.Upgrade('Twin Gates of Transcendence',loc("You now <b>keep making cookies while the game is closed</b>, at the rate of <b>5%</b> of your regular CpS and up to <b>1 hour</b> after the game is closed.<br>The 5% boost <b>stacks with Offline Baker</b>, but offline percent past 100% is weakened.")+'<q>This is one occasion you\'re always underdressed for. Don\'t worry, just rush in past the bouncer and pretend you know people.</q>',1,[15,11]);Game.last.pool='prestige';
 
 		new Game.Upgrade('Heavenly luck',loc("Golden cookies appear <b>%1%</b> more often.",5)+'<q>Someone up there likes you.</q>',77,[22,6]);Game.last.pool='prestige';
 		new Game.Upgrade('Lasting fortune',loc("Golden cookie effects last <b>%1%</b> longer.",10)+'<q>This isn\'t your average everyday luck. This is... advanced luck.</q>',777,[23,6]);Game.last.pool='prestige';Game.last.parents=['Heavenly luck'];
@@ -11278,7 +11279,7 @@ Game.Launch=function()
 		order=1200;Game.TieredUpgrade('0-sided dice','<q>The advent of the 0-sided dice has had unexpected and tumultuous effects on the gambling community, and saw experts around the world calling you both a genius and an imbecile.</q>','Chancemaker',11);
 		
 		
-		new Game.Upgrade('Heralds',loc("OOPS - this doesn't work right now. If it did, You now benefit from the boost provided by <b>heralds</b>.<br>Each herald gives you <b>+1% CpS</b>.<br>Look on the purple flag at the top to see how many heralds are active at any given time.")+(App?'<q>It\'s getting steamy.</q>':'<q>Be excellent to each other.<br>And Patreon, dudes!</q>'),100,[21,29]);Game.last.pool='prestige';
+		new Game.Upgrade('Heralds',loc("You now gain a boost of <b>+1% CpS</b> per ascension you have done.<br>Caps at +100% CpS."),100,[21,29]);Game.last.pool='prestige';
 		
 		order=255;
 		Game.GrandmaSynergy('Metagrandmas','A fractal grandma to make more grandmas to make more cookies.','Fractal engine');
@@ -12467,7 +12468,7 @@ Game.Launch=function()
 		//end of upgrades
 		
 		
-		// BISCUITCLICKER additions
+		// BISCUITCLICKER Upgrades
 		order=10;new Game.Upgrade('Offline Baker',"You generate <b>100% of your CpS</b> when offline for up to <b>24 hours</b> after going offline. (Production falls to a tenth of this amount after the 24 hours)<q>Because we aren't livin' in the 20\b10s anymore.</q>",10,[36,0],function(){});
 		
 		order=160;
@@ -12487,10 +12488,20 @@ Game.Launch=function()
 		
 		
 		order=160;
-		new Game.Upgrade('Autoclick v1.3',"The Autoclick Switch gains +0.5 base clicks/s.",10**12,[37,3],function(){})	
-		new Game.Upgrade('Autoclick v1.4',"The Autoclick Switch gains +0.5 base clicks/s.",10**15,[37,4],function(){})			
-		new Game.Upgrade('Autoclick v1.5',"The Autoclick Switch gains +0.5 base clicks/s.",10**18,[37,5],function(){})			
-		new Game.Upgrade('Autoclick v1.6',"The Autoclick Switch gains +0.5 base clicks/s.",10**21,[37,6],function(){})			
+		new Game.Upgrade('Autoclick v1.3',"The Autoclick Switch gains +0.5 base clicks/s.",10**15,[37,3],function(){})	
+		new Game.Upgrade('Autoclick v1.4',"The Autoclick Switch gains +0.5 base clicks/s.",10**21,[37,4],function(){})			
+		new Game.Upgrade('Autoclick v1.5',"The Autoclick Switch gains +0.5 base clicks/s.",10**27,[37,5],function(){})			
+		new Game.Upgrade('Autoclick v1.6',"The Autoclick Switch gains +0.5 base clicks/s.",10**33,[37,6],function(){})
+
+		order=0;
+		new Game.Upgrade('Dimension Shift',loc("Unlock a <b>new building.</b>")+'<q>If you can make antimatter into cookies, can you make matter into anticookies?</q>',10,[13,0]);Game.last.pool='prestige';
+		new Game.Upgrade('building_unlock_2',loc("Unlock a <b>new building.</b>")+'<q>temp2</q>',100,[14,0]);Game.last.pool='prestige';Game.last.parents=['Dimension Shift'];
+		new Game.Upgrade('building_unlock_3',loc("Unlock a <b>new building.</b>")+'<q>temp3</q>',10**3,[19,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_2'];
+		new Game.Upgrade('building_unlock_4',loc("Unlock a <b>new building.</b>")+'<q>temp4</q>',10**4,[20,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_3'];
+		new Game.Upgrade('building_unlock_5',loc("Unlock a <b>new building.</b>")+'<q>temp5</q>',10**5,[32,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_4'];
+		new Game.Upgrade('building_unlock_6',loc("Unlock a <b>new building.</b>")+'<q>temp6</q>',10**6,[33,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_5'];
+		new Game.Upgrade('building_unlock_7',loc("Unlock a <b>new building.</b>")+'<q>temp7</q>',10**7,[34,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_6'];
+		new Game.Upgrade('building_unlock_8',loc("Unlock a <b>new building.</b>")+'<q>temp8</q>',10**8,[35,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_7'];
 		
 		
 		
@@ -12685,7 +12696,13 @@ Game.Launch=function()
 		/*var oldPrestigePrices={"Chimera":5764801,"Synergies Vol. I":2525,"Synergies Vol. II":252525,"Label printer":9999};
 		for (var i in oldPrestigePrices){Game.Upgrades[i].basePrice=oldPrestigePrices[i];}*/
 		
-		Game.UpgradePositions={141:[118,-42],181:[-645,-99],253:[-240,-239],254:[-45,-237],255:[-142,-278],264:[61,94],265:[188,178],266:[339,191],267:[479,131],268:[573,12],269:[-745,23],270:[-546,-222],271:[-767,-199],272:[-661,-257],273:[-803,-84],274:[268,-327],275:[315,-437],276:[331,-560],277:[337,-684],278:[334,-808],279:[318,-934],280:[294,-1058],281:[194,-230],282:[-365,128],283:[-448,261],284:[-398,409],285:[-253,466],286:[-494,529],287:[-342,596],288:[-239,-386],289:[-392,-465],290:[-127,-415],291:[479,-739],292:[-486,-609],293:[-498,-781],323:[-86,109],325:[190,-1177],326:[-281,-141],327:[-265,283],328:[19,247],329:[42,402],353:[119,-328],354:[75,-439],355:[60,-562],356:[51,-685],357:[47,-808],358:[62,-934],359:[90,-1058],360:[25,568],362:[150,335],363:[-30,-30],364:[-320,-636],365:[-123,423],368:[-55,-527],393:[194,-702],394:[193,-946],395:[-143,-140],396:[-244,-897],397:[-173,606],408:[-202,-1072],409:[-49,-1206],410:[66,-1344],411:[-534,96],412:[-633,240],413:[-568,402],449:[-386,-1161],450:[-293,-1255],451:[-163,-1272],495:[-417,-997],496:[200,49],505:[411,-94],520:[-317,-26],537:[-870,-287],539:[-532,-1166],540:[-598,-1328],541:[-693,-1234],542:[-465,-1327],561:[298,-21],562:[-42,792],591:[148,844],592:[-157,902],643:[-293,770],646:[485,-882],647:[-118,248],717:[621,-676],718:[618,-537],719:[-225,-520],720:[-150,-631],801:[-310,945],802:[-466,911],803:[-588,809],804:[328,374],805:[211,522],819:[-418,-126],};
+		// This is where to put the positions for new prestige upgrades such as Dimension Shift
+		Game.UpgradePositions={141:[118,-42],181:[-645,-99],253:[-240,-239],254:[-45,-237],255:[-142,-278],264:[61,94],265:[188,178],266:[339,191],267:[479,131],268:[573,12],269:[-745,23],270:[-546,-222],271:[-767,-199],272:[-661,-257],273:[-803,-84],274:[268,-327],275:[315,-437],276:[331,-560],277:[337,-684],278:[334,-808],279:[318,-934],280:[294,-1058],281:[194,-230],282:[-365,128],283:[-448,261],284:[-398,409],285:[-253,466],286:[-494,529],287:[-342,596],288:[-239,-386],289:[-392,-465],290:[-127,-415],291:[479,-739],292:[-486,-609],293:[-498,-781],323:[-86,109],325:[190,-1177],326:[-281,-141],327:[-265,283],328:[19,247],329:[42,402],353:[119,-328],354:[75,-439],355:[60,-562],356:[51,-685],357:[47,-808],358:[62,-934],359:[90,-1058],360:[25,568],362:[150,335],363:[-30,-30],364:[-320,-636],365:[-123,423],368:[-55,-527],393:[194,-702],394:[193,-946],395:[-143,-140],396:[-244,-897],397:[-173,606],408:[-202,-1072],409:[-49,-1206],410:[66,-1344],411:[-534,96],412:[-633,240],413:[-568,402],449:[-386,-1161],450:[-293,-1255],451:[-163,-1272],495:[-417,-997],496:[200,49],505:[411,-94],520:[-317,-26],537:[-870,-287],539:[-532,-1166],540:[-598,-1328],541:[-693,-1234],542:[-465,-1327],561:[298,-21],562:[-42,792],591:[148,844],592:[-157,902],643:[-293,770],646:[485,-882],647:[-118,248],717:[621,-676],718:[618,-537],719:[-225,-520],720:[-150,-631],801:[-310,945],802:[-466,911],803:[-588,809],804:[328,374],805:[211,522],819:[-418,-126]};
+		
+		for (var i=0;i<8;i++) {
+			Game.UpgradePositions[885+i] = [400+100*i,-250-75*i]
+		}
+		
 		
 		for (var i in Game.UpgradePositions) {Game.UpgradesById[i].posX=Game.UpgradePositions[i][0];Game.UpgradesById[i].posY=Game.UpgradePositions[i][1];}
 		
@@ -16835,6 +16852,17 @@ Game.Launch=function()
 				{
 					var me=Game.Objects[i];
 					
+					var buildTierLimit = 12
+					if (Game.Has('Dimension shift')) buildTierLimit++
+					if (Game.Has('building_unlock_2')) buildTierLimit++
+					if (Game.Has('building_unlock_3')) buildTierLimit++
+					if (Game.Has('building_unlock_4')) buildTierLimit++
+					if (Game.Has('building_unlock_5')) buildTierLimit++
+					if (Game.Has('building_unlock_6')) buildTierLimit++
+					if (Game.Has('building_unlock_7')) buildTierLimit++
+					if (Game.Has('building_unlock_8')) buildTierLimit++
+					if (me.id >= buildTierLimit) continue
+					
 					//make products full-opacity if we can buy them
 					var classes='product';
 					var price=me.bulkPrice;
@@ -17039,7 +17067,7 @@ Game.AutomText = function() {
 			
 			'<div class="listing"><label>Your current building autobuyer interval is '+Game.BADelay()+' seconds.</label>'+
 			
-			'<a class="option smallFancyButton" '+Game.clickStr+'="BuyBAIUpg();PlaySound(\'snd/tick.mp3\');">'+loc("Reduce this by 25%<br>for "+
+			'<a class="option smallFancyButton" '+Game.clickStr+'="Game.BuyBAIUpg();PlaySound(\'snd/tick.mp3\');">'+loc("Reduce this by 25%<br>for "+
 			Game.BAIUpgPrice()+" sugar lump"+(Game.BAIUpgPrice()!=1?"s":""))+
 			'</a>'+
 			
@@ -17109,7 +17137,8 @@ Game.DoBuildingAutobuyers = function() {
 			if ((obAuto.mode && Game.cookies/obAuto.threshA > currOb.price) || (!obAuto.mode && Game.cookiesPs*obAuto.threshB > currOb.price)) {
 				if(Game.cookies > currOb.price)	{
 					console.log("AUTOBUY: "+objNames[i])
-					Game.ObjectsById[i].buy();
+					var buyAmt = 1; // TODO add options for bulk buy 10/100
+					Game.ObjectsById[i].buy(buyAmt,true);
 				}
 			}
 		}
@@ -17133,19 +17162,23 @@ Game.UADelay = function() {
 	return Math.max(Math.round(30000*0.75**Game.upgradeAutoDelayLevel)/1000,1/30);
 	
 }
-BuyBAIUpg = function() {
+Game.BuyBAIUpg = function() {
 	Game.spendLump(Game.BAIUpgPrice(),loc("reduce the building autobuyer interval by 25%"),function()
 	{
 		Game.buildingAutoDelayLevel++;
 		Game.UpdateMenu();
 	})();
 }
-BuyUAIUpg = function() {
+Game.BuyUAIUpg = function() {
 	Game.spendLump(Game.UAIUpgPrice(),loc("reduce the upgrade autobuyer interval by 25%"),function()
 	{
 		Game.upgradeAutoDelayLevel++;
 		Game.UpdateMenu();
 	})();
+}
+
+Game.heraldAscensionBoost = function() {
+	return Math.min(Game.resets,100)//+Math.min(Math.max((Game.resets-100)/10,0),100)
 }
 
 /*=====================================================================================

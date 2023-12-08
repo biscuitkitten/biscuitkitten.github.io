@@ -1852,7 +1852,7 @@ M.launch=function()
 		
 		if (!M.freeze)
 		{
-			M.nextStep=Math.min(M.nextStep,now+(M.stepT)*1000);
+			M.nextStep=Math.min(M.nextStep,now+(M.stepT)*1000 / Game.cheaterBoost);
 			if (now>=M.nextStep)
 			{
 				M.computeStepT();
