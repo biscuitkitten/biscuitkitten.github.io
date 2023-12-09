@@ -26,7 +26,7 @@ M.launch=function()
 				},
 				fail:function()
 				{
-					var buff=Game.gainBuff('clot',60*15,0.5);
+					var buff=Game.gainBuff('clot',60*15/Game.cheaterBoost,0.5);
 					var val=Math.min(Game.cookies*0.15,Game.cookiesPs*60*15)+13;
 					val=Math.min(Game.cookies,val);
 					Game.Spend(val);
@@ -156,13 +156,13 @@ M.launch=function()
 				win:function()
 				{
 					Game.killBuff('Haggler\'s misery');
-					var buff=Game.gainBuff('haggler luck',60,2);
+					var buff=Game.gainBuff('haggler luck',60/Game.cheaterBoost,2);
 					Game.Popup('<div style="font-size:80%;">'+loc("Upgrades are cheaper!")+'</div>',Game.mouseX,Game.mouseY);
 				},
 				fail:function()
 				{
 					Game.killBuff('Haggler\'s luck');
-					var buff=Game.gainBuff('haggler misery',60*60,2);
+					var buff=Game.gainBuff('haggler misery',60*60/Game.cheaterBoost,2);
 					Game.Popup('<div style="font-size:80%;">'+loc("Backfire!")+'<br>'+loc("Upgrades are pricier!")+'</div>',Game.mouseX,Game.mouseY);
 				},
 			},
@@ -176,13 +176,13 @@ M.launch=function()
 				win:function()
 				{
 					Game.killBuff('Nasty goblins');
-					var buff=Game.gainBuff('pixie luck',60,2);
+					var buff=Game.gainBuff('pixie luck',60/Game.cheaterBoost,2);
 					Game.Popup('<div style="font-size:80%;">'+loc("Crafty pixies")+'<br>'+loc("Buildings are cheaper!")+'</div>',Game.mouseX,Game.mouseY);
 				},
 				fail:function()
 				{
 					Game.killBuff('Crafty pixies');
-					var buff=Game.gainBuff('pixie misery',60*60,2);
+					var buff=Game.gainBuff('pixie misery',60*60/Game.cheaterBoost,2);
 					Game.Popup('<div style="font-size:80%;">'+loc("Backfire!")+'<br>'+loc("Nasty goblins")+'<br>'+loc("Buildings are pricier!")+'</div>',Game.mouseX,Game.mouseY);
 				},
 			},
@@ -203,7 +203,10 @@ M.launch=function()
 					var cost=M.getSpellCost(spell)*0.5;
 					setTimeout(function(spell,cost,seed){return function(){
 						if (Game.seed!=seed) return false;
-						var out=M.castSpell(spell,{cost:cost,failChanceMax:0.5,passthrough:true});
+						var fcMax = 0.5
+						if (Game.Cookivenience && Game.hasMMilestone("Wizard tower",8)) fcMax *= 2/3
+						if (Game.Cookivenience && Game.hasMMilestone("Wizard tower",14)) fcMax *= 1/2 // 2/3 total
+						var out=M.castSpell(spell,{cost:cost,failChanceMax:fcMax,passthrough:true});
 						if (!out)
 						{
 							M.magic+=selfCost;
@@ -245,13 +248,13 @@ M.launch=function()
 				win:function()
 				{
 					Game.killBuff('Magic inept');
-					var buff=Game.gainBuff('magic adept',5*60,10);
+					var buff=Game.gainBuff('magic adept',5*60/Game.cheaterBoost,10);
 					Game.Popup('<div style="font-size:80%;">'+loc("Ineptitude diminished!")+'</div>',Game.mouseX,Game.mouseY);
 				},
 				fail:function()
 				{
 					Game.killBuff('Magic adept');
-					var buff=Game.gainBuff('magic inept',10*60,5);
+					var buff=Game.gainBuff('magic inept',10*60/Game.cheaterBoost,5);
 					Game.Popup('<div style="font-size:80%;">'+loc("Backfire!")+'<br>'+loc("Ineptitude magnified!")+'</div>',Game.mouseX,Game.mouseY);
 				},
 			},
@@ -293,6 +296,10 @@ M.launch=function()
 			if (Game.hasBuff('Magic inept')) failChance*=5;
 			failChance*=1+0.1*Game.auraMult('Supreme Intellect');
 			if (spell.failFunc) failChance=spell.failFunc(failChance);
+			
+			if (Game.Cookivenience && Game.hasMMilestone("Wizard tower",8)) failChance *= 2/3
+			if (Game.Cookivenience && Game.hasMMilestone("Wizard tower",14)) failChance *= 1/2 // 2/3 total
+			
 			return failChance;
 		}
 		
@@ -413,7 +420,16 @@ M.launch=function()
 			}
 			str+='</div>';
 			var icon=[29,14];
-			str+='<div id="grimoireBar" class="smallFramed meterContainer" style="width:1px;"><div '+Game.getDynamicTooltip('Game.ObjectsById['+M.parent.id+'].minigame.refillTooltip','this')+' id="grimoireLumpRefill" class="usesIcon shadowFilter lumpRefill" style="left:-40px;top:-17px;background-position:'+(-icon[0]*48)+'px '+(-icon[1]*48)+'px;"></div><div id="grimoireBarFull" class="meter filling" style="width:1px;"></div><div id="grimoireBarText" class="titleFont"></div><div '+Game.getTooltip('<div style="padding:8px;width:300px;font-size:11px;text-align:center;">'+loc("This is your magic meter. Each spell costs magic to use.<div class=\"line\"></div>Your maximum amount of magic varies depending on your amount of <b>Wizard towers</b>, and their level.<div class=\"line\"></div>Magic refills over time. The lower your magic meter, the slower it refills.")+'</div>')+' style="position:absolute;left:0px;top:0px;right:0px;bottom:0px;"></div></div>';
+			var icon2=[17,0];
+			var icon3=[11,3];
+			
+			str+='<div id="grimoireBar" class="smallFramed meterContainer" style="width:1px;"><div '+Game.getDynamicTooltip('Game.ObjectsById['+M.parent.id+'].minigame.refillTooltip','this')+' id="grimoireLumpRefill" class="usesIcon shadowFilter lumpRefill" style="left:-40px;top:-17px;background-position:'+(-icon[0]*48)+'px '+(-icon[1]*48)+'px;"></div>'+
+			
+			'<div '+Game.getDynamicTooltip('Game.ObjectsById['+M.parent.id+'].minigame.predictBackfireTooltip','this')+' id="grimoireBackfirePredict" class="usesIcon shadowFilter lumpRefill" style="left:0px;top:-17px;background-position:'+(-icon2[0]*48)+'px '+(-icon2[1]*48)+'px;"></div>'+
+			
+			'<div '+Game.getDynamicTooltip('Game.ObjectsById['+M.parent.id+'].minigame.predictGoldenTooltip','this')+' id="grimoireGoldenPredict" class="usesIcon shadowFilter lumpRefill" style="left:0px;top:-17px;background-position:'+(-icon3[0]*48)+'px '+(-icon3[1]*48)+'px;"></div>'+
+			
+			'<div id="grimoireBarFull" class="meter filling" style="width:1px;"></div><div id="grimoireBarText" class="titleFont"></div><div '+Game.getTooltip('<div style="padding:8px;width:300px;font-size:11px;text-align:center;">'+loc("This is your magic meter. Each spell costs magic to use.<div class=\"line\"></div>Your maximum amount of magic varies depending on your amount of <b>Wizard towers</b>, and their level.<div class=\"line\"></div>Magic refills over time. The lower your magic meter, the slower it refills.")+'</div>')+' style="position:absolute;left:0px;top:0px;right:0px;bottom:0px;"></div></div>';
 			str+='<div id="grimoireInfo"></div>';
 		str+='</div>';
 		div.innerHTML=str;
@@ -421,6 +437,8 @@ M.launch=function()
 		M.magicBarFullL=l('grimoireBarFull');
 		M.magicBarTextL=l('grimoireBarText');
 		M.lumpRefill=l('grimoireLumpRefill');
+		M.backfirePredict=l('grimoireBackfirePredict');
+		M.goldenPredict=l('grimoireGoldenPredict');
 		M.infoL=l('grimoireInfo');
 		for (var i in M.spells)
 		{
@@ -431,6 +449,93 @@ M.launch=function()
 		M.refillTooltip=function(){
 			return '<div style="padding:8px;width:300px;font-size:11px;text-align:center;" id="tooltipRefill">'+loc("Click to refill <b>%1 units</b> of your magic meter for %2.",[100,'<span class="price lump">'+loc("%1 sugar lump",LBeautify(1))+'</span>'])+
 				(Game.canRefillLump()?'<br><small>('+loc("can be done once every %1",Game.sayTime(Game.getLumpRefillMax(),-1))+')</small>':('<br><small class="red">('+loc("usable again in %1",Game.sayTime(Game.getLumpRefillRemaining()+Game.fps,-1))+')</small>'))+
+			'</div>';
+		};
+		M.predictBackfire=function(spell){
+			Math.seedrandom(Game.seed+'/'+M.spellsCastTotal);
+			let predRoll = Math.random();
+			Math.seedrandom(Game.seed+'/'+(M.spellsCastTotal+1));
+			let predRoll2 = Math.random();
+
+			var spells=[];
+			var selfCost=M.getSpellCost(M.spells['gambler\'s fever dream']);
+			for (var i in M.spells){if (i!='gambler\'s fever dream' && (M.magic-selfCost)>=M.getSpellCost(M.spells[i])*0.5) spells.push(M.spells[i]);}
+			if (spells.length==0)spells=["none"]
+			Math.seedrandom(Game.seed+'/'+M.spellsCastTotal);
+			var gSpell=choose(spells);
+
+			if(!spell) spell = Game.Objects["Wizard tower"].minigame.spells["conjure baked goods"]
+			let backfireChance = M.getFailChance(spell)
+			
+			let backfire = !(predRoll < (1 - backfireChance))
+			
+			
+			return [predRoll,predRoll2,gSpell,backfire]
+			
+		}
+		M.predictBackfireTooltip=function(){
+			let [predRoll,predRoll2,gSpell,backfire] = M.predictBackfire()
+
+			return '<div style="padding:8px;width:180px;font-size:11px;text-align:center;" id="tooltipPred2">Your next spell\'s success luck will be: <br>'+
+			'<b>'+Beautify(100*(1-predRoll))+'%</b> (succeeds if > backfire chance)'+
+			(gSpell!="none"?'<br>GFD will cast <b>'+gSpell.name+'</b> with success luck: '+'<b>'+Beautify(100*(1-predRoll2))+'%</b> (will '+(predRoll2<0.5?'succeed)':'BACKFIRE)'):'<br>GFD will <b>fail to cast a spell</b><br>(none eligible)')+
+			'</div>';
+		};
+		M.predictGoldenTooltip=function(){
+			let predGCook = "e"
+
+			Math.seedrandom(Game.seed+'/'+(M.spellsCastTotal));
+			let predRoll = Math.random();
+			//console.log(predRoll)
+
+			let idx = ((Game.season == "valentines" || Game.season == "easter") ? 1 : 0);
+
+			if (idx > 0) Math.random();
+			if (idx > 1) Math.random();
+			Math.random();
+			Math.random();
+			
+			let backfireChance = M.getFailChance(M.spells["hand of fate"])
+			
+			if (predRoll < (1 - backfireChance)) {
+				var choices=[];
+				choices.push('Frenzy','Lucky');
+				if (!Game.hasBuff('Dragonflight')) choices.push('Click Frenzy');
+				if (Math.random()<0.1) choices.push('Cookie Storm','Cookie Storm','Blab');
+				if (Game.BuildingsOwned>=10 && Math.random()<0.25) choices.push('Building Special');
+				if (Math.random()<0.15) choices=['Cookie Storm'];
+				if (Math.random()<0.0001) choices.push('Free Sugar Lump');
+				predGCook=choose(choices);
+
+
+				if (predGCook=='Building Special')
+				{
+					var list=[];
+					for (var i in Game.Objects)
+					{
+						if (Game.Objects[i].amount>=10) list.push(Game.Objects[i].id);
+					}
+					if (list.length==0) {choice='Frenzy';}//default to frenzy if no proper building
+					else
+					{
+						let pickBId = choose(list);
+						predGCook = Game.goldenCookieBuildingBuffs[Game.ObjectsById[pickBId].name][0]+' (or some other building special)';
+					}
+				}
+
+
+			}
+			else {		
+				var choices=[];
+				choices.push('Clot','Ruin');
+				if (Math.random()<0.1) choices.push('Cursed Finger','Elder Frenzy');
+				if (Math.random()<0.003) choices.push('Free Sugar Lump');
+				if (Math.random()<0.1) choices=['Blab'];
+				predGCook=choose(choices);
+			}
+			
+			return '<div style="padding:8px;width:180px;font-size:11px;text-align:center;" id="tooltipPred2">Your next Hand of Fate cookie will be:<br>'+
+			'<b>'+predGCook+'</b>'+
 			'</div>';
 		};
 		AddEvent(M.lumpRefill,'click',function(){
@@ -483,7 +588,8 @@ M.launch=function()
 	{
 		//run each frame
 		if (Game.T%5==0) {M.computeMagicM();}
-		M.magicPS=Math.max(0.002,Math.pow(M.magic/Math.max(M.magicM,100),0.5))*0.002;
+		let milestoneBoost = ((Game.Cookivenience) ? (Game.hasMMilestone("Wizard tower",6)?1.2:1)*(Game.hasMMilestone("Wizard tower",9)?1.2:1)*(Game.hasMMilestone("Wizard tower",12)?1.2:1)*(Game.hasMMilestone("Wizard tower",15)?1.1574074074074:1) : 1) // boost from milestones to magic gain
+		M.magicPS=Math.max(0.002,Math.pow(M.magic/Math.max(M.magicM,100),(Game.Cookivenience&&Game.hasMMilestone("Wizard tower",15)?0.4:0.5)))*0.002 * Game.cheaterBoost * milestoneBoost;
 		M.magic+=M.magicPS;
 		M.magic=Math.min(M.magic,M.magicM);
 		if (Game.T%5==0)

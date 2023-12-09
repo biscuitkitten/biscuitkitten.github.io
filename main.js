@@ -1238,7 +1238,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.3"
+Game.modVersion="0.3.1"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -2055,6 +2055,7 @@ Game.Launch=function()
 		// BISCUITCLICKER
 		Game.buildingAutoDelayLevel=0;
 		Game.upgradeAutoDelayLevel=0;
+		Game.soldCookies=0; // goes up when you buy and goes down when you sell
 		
 		Game.makeSeed=function()
 		{
@@ -2835,6 +2836,8 @@ Game.Launch=function()
 			str+= (type==3?'\n	cheater boost : ':'')+parseFloat(Game.cheaterBoost).toString()+';'
 			str+= (type==3?'\n	building automator speed levels : ':'')+parseInt(Game.buildingAutoDelayLevel).toString()+';'
 			str+= (type==3?'\n	upgrade automator speed levels : ':'')+parseInt(Game.upgradeAutoDelayLevel).toString()+';'
+			str+= (type==3?'\n	cookies currently invested into building production : ':'')+parseInt(Game.soldCookies).toString()+';'
+			str+= (type==3?'\n	cookivenience mode : ':'')+(Game.Cookivenience).toString()+';'
 			
 			Game.lastSaveData=str;
 			
@@ -3259,6 +3262,11 @@ Game.Launch=function()
 							Game.buildingAutoDelayLevel=parseInt(spl[1]);
 						if(spl[2])
 							Game.upgradeAutoDelayLevel=parseInt(spl[2]);
+						if(spl[3])
+							Game.soldCookies=parseInt(spl[3]);
+						if(spl[4])
+							Game.Cookivenience=(spl[4] == "true");
+							Game.setupShortMilestoneText()
 						
 						for (var i in Game.ObjectsById)
 						{
@@ -3375,24 +3383,8 @@ Game.Launch=function()
 								if (Game.Has('Beelzebub')) maxTime*=2;
 								if (Game.Has('Lucifer')) maxTime*=2;
 								
-								var percent=5;
-								if (Game.Has('Offline Baker')) percent = 100;
-								if (Game.Has('Twin Gates of Transcendence')) percent+=5;
-								if (Game.Has('Angels')) percent+=10;
-								if (Game.Has('Archangels')) percent+=10;
-								if (Game.Has('Virtues')) percent+=10;
-								if (Game.Has('Dominions')) percent+=10;
-								if (Game.Has('Cherubim')) percent+=10;
-								if (Game.Has('Seraphim')) percent+=10;
-								if (Game.Has('God')) percent+=10;
-								
-								if (Game.Has('Chimera')) {maxTime+=60*60*24*2;percent+=5;}
-								
-								if (Game.Has('Fern tea')) percent+=3;
-								if (Game.Has('Ichor syrup')) percent+=7;
-								if (Game.Has('Fortune #102')) percent+=1;
+								var percent = Game.getOfflinePercent();
 							}
-							if (percent > 100) percent = Math.round(100+(percent-100)**0.8) // Weaken offline production boost after 100%
 							
 							var timeOfflineOptimal=Math.min(timeOffline,maxTime);
 							var timeOfflineReduced=Math.max(0,timeOffline-timeOfflineOptimal);
@@ -3727,6 +3719,12 @@ Game.Launch=function()
 				Game.lumpRefill=0;
 				Game.removeClass('lumpsOn');
 				if (App) App.hardReset();
+				
+				// BISCUITCLICKER
+				Game.Cookivenience = false
+				Game.ResetMinigameAutomators()
+				Game.setupShortMilestoneText()
+				Game.cheaterBoost = 1
 			}
 		}
 		
@@ -4830,7 +4828,8 @@ Game.Launch=function()
 				
 				Game.runModHook('click');
 				
-				Game.playCookieClickSound();
+				if(!auto) Game.playCookieClickSound(); // don't play the sound if it's an autoclick
+				
 				Game.cookieClicks++;
 				
 				if (Game.clicksThisSession==0) PlayCue('preplay');
@@ -6747,6 +6746,7 @@ Game.Launch=function()
 						'<div class="listing">'+Game.WritePrefButton('offprog','offprogButton','Offline Progress ON','Offline Progress OFF')+'<label>('+loc("earn cookies offline (if applicable)")+')</label><br>'+'</div>'+
 						'<div class="listing">'+Game.WritePrefButton('newsticker','newstickerButton','News Ticker ON','News Ticker OFF')+'<label>('+loc("display news blurbs")+')</label><br>'+'</div>'+
 						'<div class="listing">'+Game.WritePrefButton('scinotation','scinotationButton','Scientific Notation ON','Scientific Notation OFF','BeautifyAll();Game.RefreshStore();Game.upgradesToRebuild=1;')+'<label>('+loc("show numbers in scientific notation")+')</label><br>'+'</div>'+
+						(!Game.Cookivenience?'</label><div class="listing"><a class="option smallFancyButton warning" '+Game.clickStr+'="Game.activateCookivenience();PlaySound(\'snd/tick.mp3\');">Enable Cookivenience mode (permanent)</a><label>(unlock a few convenience features; but be warned, this can\'t be undone and makes the game easier than Orteil intended)</label></div></div>':'')+
 						//(!App?'<div class="listing"><a class="option smallFancyButton" '+Game.clickStr+'="Game.CheckModData();PlaySound(\'snd/tick.mp3\');">'+loc("Check mod data")+'</a><label>('+loc("view and delete save data created by mods")+')</label></div>':'')+
 						
 						'</div>'+
@@ -6981,6 +6981,9 @@ Game.Launch=function()
 				'</div><div class="subsection">'+
 				'<div class="title">'+loc("Special")+'</div>'+
 				'<div id="statsSpecial">'+
+					(Game.cheaterBoost!=1?'<div class="listing"><b>'+loc("Cheater's overall game speed multiplier:")+'</b> '+Beautify(Game.cheaterBoost,2)+'x</div>':'')+
+					(Game.Cookivenience?'<div class="listing"><b>'+loc("Cookivenience mode:")+'</b> Enabled!</div>':'')+
+					(Game.getOfflinePercent()!=0?'<div class="listing"><b>'+loc("Offline progress efficiency:")+'</b> '+Beautify(Game.getOfflinePercent(),1)+'%'+(Game.getOfflinePercent()>100?' <small>(softcapped above 100%)</small>':'')+'</div>':'')+
 					(ascensionModeStr!=''?'<div class="listing"><b>'+loc("Challenge mode:")+'</b>'+ascensionModeStr+'</div>':'')+
 					(Game.season!=''?'<div class="listing"><b>'+loc("Seasonal event:")+'</b> '+Game.seasons[Game.season].name+
 						(seasonStr!=''?' <small>('+loc("%1 remaining",seasonStr)+')</small>':'')+
@@ -7034,6 +7037,26 @@ Game.Launch=function()
 					achievementsStr+
 				'</div>'+
 				'</div>'+
+				
+				'<div class="subsection">'+
+				'<div class="title">Level Milestones</div>'+
+				'<div id="statsLevelMilestones">'+
+					(Game.BuildingsAutomated()?'<div class="listing">Automation for each building unlocks at level 5 of that building.</div><div class="listing"><b>Current buildings automated:</b> '+Game.BuildingsAutomated()+'</div><br>':'')+
+					
+					
+					
+					'<div class="subtitle">Garden Milestones<small style="font-size:12px;font-family:Tahoma,Arial,sans-serif;"> (unlocked by farm levels)</small></div><br>'+
+					Game.getMinigameMilestoneString("Garden")+
+					'<div class="subtitle">Stock Market Milestones<small style="font-size:12px;font-family:Tahoma,Arial,sans-serif;"> (unlocked by bank levels)</small></div><br>'+
+					Game.getMinigameMilestoneString("Stock Market")+
+					'<div class="subtitle">Pantheon Milestones<small style="font-size:12px;font-family:Tahoma,Arial,sans-serif;"> (unlocked by temple levels)</small></div><br>'+
+					Game.getMinigameMilestoneString("Pantheon")+
+					'<div class="subtitle">Grimoire Milestones<small style="font-size:12px;font-family:Tahoma,Arial,sans-serif;"> (unlocked by wizard tower levels)</small></div><br>'+
+					Game.getMinigameMilestoneString("Grimoire")+
+					
+				'</div>'+
+				'</div>'+
+				
 				'<div style="padding-bottom:128px;"></div>'
 				;
 			}
@@ -7940,6 +7963,7 @@ Game.Launch=function()
 						bought++;
 						moni+=price;
 						Game.Spend(price);
+						Game.soldCookies += Math.floor(price*this.getSellMultiplier()); // some of cookies sold enter into the soldCookies pile, which is drawn from again when you sell buildings
 						this.amount++;
 						this.bought++;
 						price=this.getPrice();
@@ -7967,11 +7991,13 @@ Game.Launch=function()
 					var price=this.getPrice();
 					var giveBack=this.getSellMultiplier();
 					price=Math.floor(price*giveBack);
+					price=Math.min(price,Game.soldCookies) // you can't get back more than the remaining cookies sold (cookies spent on buildings)
 					if (this.amount>0)
 					{
 						sold++;
 						moni+=price;
 						Game.cookies+=price;
+						Game.soldCookies -= price; // you get these cookies back so they aren't in the sold pile anymore
 						Game.cookiesEarned=Math.max(Game.cookies,Game.cookiesEarned);//this is to avoid players getting the cheater achievement when selling buildings that have a higher price than they used to
 						this.amount--;
 						price=this.getPrice();
@@ -8168,6 +8194,10 @@ Game.Launch=function()
 						synergiesStr=loc("...also boosting some other buildings:")+' '+synergiesStr+' - '+loc("all combined, these boosts account for <b>%1</b> per second (<b>%2%</b> of total CpS)",[loc("%1 cookie",LBeautify(synergyBoost,1)),Beautify((synergyBoost/Game.cookiesPs)*100,1)]);
 					}
 				}
+				var autoclickerStr = '';
+				if (me.amount > 0 && me.name == "Cursor" && Game.Has('Autoclick switch [off]')) {
+					autoclickerStr=loc("...also boosting Autoclick switch base clicks per second by <b>"+(me.amount/100)+"</b>");
+				}
 				
 				if (Game.prefs.screenreader)
 				{
@@ -8192,7 +8222,7 @@ Game.Launch=function()
 					'<div class="line"></div>'+
 					(me.amount>0?'<div class="descriptionBlock">'+loc("each %1 produces <b>%2</b> per second",[me.single,loc("%1 cookie",LBeautify((me.storedTotalCps/me.amount)*Game.globalCpsMult,1))])+'</div>':'')+
 					'<div class="descriptionBlock">'+loc("%1 producing <b>%2</b> per second",[loc("%1 "+me.bsingle,LBeautify(me.amount)),loc("%1 cookie",LBeautify(me.storedTotalCps*Game.globalCpsMult,1))])+' ('+loc("<b>%1%</b> of total CpS",Beautify(Game.cookiesPs>0?((me.amount>0?((me.storedTotalCps*Game.globalCpsMult)/Game.cookiesPs):0)*100):0,1))+')</div>'+
-					(synergiesStr?('<div class="descriptionBlock">'+synergiesStr+'</div>'):'')+
+					(synergiesStr?('<div class="descriptionBlock">'+synergiesStr+'</div>'):'')+(autoclickerStr?('<div class="descriptionBlock">'+autoclickerStr+'</div>'):'')+
 					(EN?'<div class="descriptionBlock"><b>'+Beautify(me.totalCookies)+'</b> '+(Math.floor(me.totalCookies)==1?'cookie':'cookies')+' '+me.actionName+' so far</div>':'<div class="descriptionBlock">'+loc("<b>%1</b> produced so far",loc("%1 cookie",LBeautify(me.totalCookies)))+'</div>')
 				):'')+
 				'</div>';
@@ -8208,7 +8238,9 @@ Game.Launch=function()
 				return '<div style="width:280px;padding:8px;" id="tooltipLevel"><b>'+loc("Level %1 %2",[Beautify(me.level),me.plural])+'</b><div class="line"></div>'+(EN?((me.level==1?me.extraName:me.extraPlural).replace('[X]',Beautify(me.level))+' granting <b>+'+Beautify(me.level)+'% '+me.dname+' CpS'+bonusInfo+'</b>.'):loc("Granting <b>+%1% %2 CpS"+bonusInfo+"</b>.",[Beautify(me.level),me.single]))+'<div class="line"></div>'+loc("Click to level up for %1.",'<span class="price lump'+(Game.lumps>=me.level+1?'':' disabled')+'">'+loc("%1 sugar lump",LBeautify(me.level+1))+'</span>')
 				+((me.level==0 && me.minigameUrl)?'<div class="line"></div><b>'+loc("Levelling up this building unlocks a minigame.")+'</b>':'')+
 				
-				((me.level==4)?'<div class="line"></div><b>'+loc("Levelling up this building unlocks an autobuyer for it.")+'</b>':'')+
+				((me.level==4)?'<div class="line"></div><b>Levelling up this building to level 5 unlocks an autobuyer for it'+((me.minigameUrl)?'</b>':'.</b>'):'')+
+				
+				((me.minigameUrl)?Game.levelMilestoneText(me.name,me.level+1):'')+
 				
 				'</div>';
 			}
@@ -8236,6 +8268,18 @@ Game.Launch=function()
 				else if (this.amount>0 && this.id!=0) l('row'+this.id).classList.add('enabled');
 				if (this.muted>0 && this.id!=0) {l('row'+this.id).classList.add('muted');l('mutedProduct'+this.id).style.display='inline-block';}
 				else if (this.id!=0) {l('row'+this.id).classList.remove('muted');l('mutedProduct'+this.id).style.display='none';}
+				var mM = 0
+				try {mM=Game.Objects["Wizard tower"].minigame.magicM}
+				catch(error){}
+				spRiOffset = mM*3
+				if(l("grimoireBackfirePredict")) {
+					l("grimoireBackfirePredict").style.display=(Game.hasMMilestone("Wizard tower",5)?"":"none")
+					l("grimoireBackfirePredict").style.left = spRiOffset+"px"
+				}
+				if(l("grimoireGoldenPredict")) {
+					l("grimoireGoldenPredict").style.display=(Game.hasMMilestone("Wizard tower",10)?"":"none")
+					l("grimoireGoldenPredict").style.left = (spRiOffset+28)+"px"
+				}
 				//if (!this.onMinigame && !this.muted) {}
 				//else this.pics=[];
 			}
@@ -10162,6 +10206,7 @@ Game.Launch=function()
 				Game.researchT=Game.baseResearchTime;
 				if (Game.Has('Persistent memory')) Game.researchT=Math.ceil(Game.baseResearchTime/10);
 				if (Game.Has('Ultrascience')) Game.researchT=Game.fps*5;
+				Game.researchT = Math.ceil(Game.researchT/Game.cheaterBoost);
 				Game.nextResearch=Game.Upgrades[what].id;
 				Game.Notify(loc("Research has begun"),loc("Your bingo center/research facility is conducting experiments."),[9,0]);
 			}
@@ -10708,7 +10753,7 @@ Game.Launch=function()
 		new Game.Upgrade('Seraphim',desc(10,65)+'<q>Leading the first sphere of pastry heaven, seraphim possess ultimate knowledge of everything pertaining to baking.</q>',Math.pow(angelPriceFactor,6),[5,11]);Game.last.pool='prestige';Game.last.parents=['Cherubim'];
 		new Game.Upgrade('God',desc(10,75)+'<q>Like Santa, but less fun.</q>',Math.pow(angelPriceFactor,7),[6,11]);Game.last.pool='prestige';Game.last.parents=['Seraphim'];
 		
-		new Game.Upgrade('Twin Gates of Transcendence',loc("You now <b>keep making cookies while the game is closed</b>, at the rate of <b>5%</b> of your regular CpS and up to <b>1 hour</b> after the game is closed.<br>The 5% boost <b>stacks with Offline Baker</b>, but offline percent past 100% is weakened.")+'<q>This is one occasion you\'re always underdressed for. Don\'t worry, just rush in past the bouncer and pretend you know people.</q>',1,[15,11]);Game.last.pool='prestige';
+		new Game.Upgrade('Twin Gates of Transcendence',loc("You now <b>keep making cookies while the game is closed</b>, at the rate of <b>%1%</b> of your regular CpS and up to <b>1 hour</b> after the game is closed.<br>(Beyond 1 hour, this is reduced by a further %2% - your rate goes down to <b>%3%</b> of your CpS.)",[5,90,0.5])+'<q>This is one occasion you\'re always underdressed for. Don\'t worry, just rush in past the bouncer and pretend you know people.</q>',1,[15,11]);Game.last.pool='prestige'; // You now <b>keep making cookies while the game is closed</b>, at the rate of <b>5%</b> of your regular CpS and up to <b>1 hour</b> after the game is closed.<br>The 5% boost <b>stacks with Offline Baker</b>, but offline percent past 100% is weakened.
 
 		new Game.Upgrade('Heavenly luck',loc("Golden cookies appear <b>%1%</b> more often.",5)+'<q>Someone up there likes you.</q>',77,[22,6]);Game.last.pool='prestige';
 		new Game.Upgrade('Lasting fortune',loc("Golden cookie effects last <b>%1%</b> longer.",10)+'<q>This isn\'t your average everyday luck. This is... advanced luck.</q>',777,[23,6]);Game.last.pool='prestige';Game.last.parents=['Heavenly luck'];
@@ -12472,11 +12517,11 @@ Game.Launch=function()
 		order=10;new Game.Upgrade('Offline Baker',"You generate <b>100% of your CpS</b> when offline for up to <b>24 hours</b> after going offline. (Production falls to a tenth of this amount after the 24 hours)<q>Because we aren't livin' in the 20\b10s anymore.</q>",10,[36,0],function(){});
 		
 		order=160;
-		new Game.Upgrade('True Autoclick',"Unlock the <b>Autoclick Switch</b>, which passively clicks the cookie for you but disables manual clicking.<br>(Base clicks/s is 1 plus 1% for every owned Cursor.)<q>Why click by hand when you have all these perfectly good cursors to do it for you?</q>",1000,[37,0],function(){})
+		new Game.Upgrade('True Autoclick',"Unlock the <b>Autoclick Switch</b>, which passively clicks the cookie for you but disables manual clicking.<br>(Base clicks/s is 1 plus another 0.\b0\b1 for every owned Cursor.)<q>Why click by hand when you have all these perfectly good cursors to do it for you?</q>",1000,[37,0],function(){})
 		new Game.Upgrade('Autoclick v1.1',"The Autoclick Switch gains +0.5 base clicks/s.",10**6,[37,1],function(){})	
 		new Game.Upgrade('Autoclick v1.2',"The Autoclick Switch gains +0.5 base clicks/s.",10**9,[37,2],function(){})	
 		
-		order=40100;
+		order=10;
 		
 		new Game.Upgrade('Autoclick switch [off]',"Turning this on will cause the cookie to be <b>autoclicked</b>, but prevent you from manually clicking the cookie.<br>Cost is equal to 1 minute of production.",1000,[36,36],function(){lastTime = new Date().getTime()});
 		Game.last.pool='toggle';Game.last.toggleInto='Autoclick switch [on]';
@@ -12488,21 +12533,22 @@ Game.Launch=function()
 		
 		
 		order=160;
-		new Game.Upgrade('Autoclick v1.3',"The Autoclick Switch gains +0.5 base clicks/s.",10**15,[37,3],function(){})	
-		new Game.Upgrade('Autoclick v1.4',"The Autoclick Switch gains +0.5 base clicks/s.",10**21,[37,4],function(){})			
-		new Game.Upgrade('Autoclick v1.5',"The Autoclick Switch gains +0.5 base clicks/s.",10**27,[37,5],function(){})			
-		new Game.Upgrade('Autoclick v1.6',"The Autoclick Switch gains +0.5 base clicks/s.",10**33,[37,6],function(){})
+		new Game.Upgrade('Autoclick v1.3',"The Autoclick Switch gains +0.5 base clicks/s.",10**12,[37,3],function(){})	
+		new Game.Upgrade('Autoclick v1.4',"The Autoclick Switch gains +0.5 base clicks/s.",10**15,[37,4],function(){})			
+		new Game.Upgrade('Autoclick v1.5',"The Autoclick Switch gains +0.5 base clicks/s.",10**18,[37,5],function(){})			
+		new Game.Upgrade('Autoclick v1.6',"The Autoclick Switch gains +0.5 base clicks/s.",10**21,[37,6],function(){})
 
+		/*		WILL BE MOVED TO [BiscuitClicker Extended]
 		order=0;
-		new Game.Upgrade('Dimension Shift',loc("Unlock a <b>new building.</b>")+'<q>If you can make antimatter into cookies, can you make matter into anticookies?</q>',10,[13,0]);Game.last.pool='prestige';
-		new Game.Upgrade('building_unlock_2',loc("Unlock a <b>new building.</b>")+'<q>temp2</q>',100,[14,0]);Game.last.pool='prestige';Game.last.parents=['Dimension Shift'];
-		new Game.Upgrade('building_unlock_3',loc("Unlock a <b>new building.</b>")+'<q>temp3</q>',10**3,[19,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_2'];
-		new Game.Upgrade('building_unlock_4',loc("Unlock a <b>new building.</b>")+'<q>temp4</q>',10**4,[20,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_3'];
+		new Game.Upgrade('Dimension shift',loc("Unlock a <b>new building.</b>")+'<q>If you can make antimatter into cookies, can you make matter into anticookies?</q>',10,[13,0]);Game.last.pool='prestige';
+		new Game.Upgrade('Lighten up',loc("Unlock a <b>new building.</b>")+'<q>temp2</q>',100,[14,0]);Game.last.pool='prestige';Game.last.parents=['Dimension shift'];
+		new Game.Upgrade('RNGesus\'s Blessing',loc("Unlock a <b>new building.</b>")+'<q>temp3</q>',10**3,[19,0]);Game.last.pool='prestige';Game.last.parents=['Lighten up'];
+		new Game.Upgrade('building_unlock_4',loc("Unlock a <b>new building.</b>")+'<q>temp4</q>',10**4,[20,0]);Game.last.pool='prestige';Game.last.parents=['RNGesus\'s Blessing'];
 		new Game.Upgrade('building_unlock_5',loc("Unlock a <b>new building.</b>")+'<q>temp5</q>',10**5,[32,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_4'];
 		new Game.Upgrade('building_unlock_6',loc("Unlock a <b>new building.</b>")+'<q>temp6</q>',10**6,[33,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_5'];
 		new Game.Upgrade('building_unlock_7',loc("Unlock a <b>new building.</b>")+'<q>temp7</q>',10**7,[34,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_6'];
 		new Game.Upgrade('building_unlock_8',loc("Unlock a <b>new building.</b>")+'<q>temp8</q>',10**8,[35,0]);Game.last.pool='prestige';Game.last.parents=['building_unlock_7'];
-		
+		*/
 		
 		
 		
@@ -12699,9 +12745,9 @@ Game.Launch=function()
 		// This is where to put the positions for new prestige upgrades such as Dimension Shift
 		Game.UpgradePositions={141:[118,-42],181:[-645,-99],253:[-240,-239],254:[-45,-237],255:[-142,-278],264:[61,94],265:[188,178],266:[339,191],267:[479,131],268:[573,12],269:[-745,23],270:[-546,-222],271:[-767,-199],272:[-661,-257],273:[-803,-84],274:[268,-327],275:[315,-437],276:[331,-560],277:[337,-684],278:[334,-808],279:[318,-934],280:[294,-1058],281:[194,-230],282:[-365,128],283:[-448,261],284:[-398,409],285:[-253,466],286:[-494,529],287:[-342,596],288:[-239,-386],289:[-392,-465],290:[-127,-415],291:[479,-739],292:[-486,-609],293:[-498,-781],323:[-86,109],325:[190,-1177],326:[-281,-141],327:[-265,283],328:[19,247],329:[42,402],353:[119,-328],354:[75,-439],355:[60,-562],356:[51,-685],357:[47,-808],358:[62,-934],359:[90,-1058],360:[25,568],362:[150,335],363:[-30,-30],364:[-320,-636],365:[-123,423],368:[-55,-527],393:[194,-702],394:[193,-946],395:[-143,-140],396:[-244,-897],397:[-173,606],408:[-202,-1072],409:[-49,-1206],410:[66,-1344],411:[-534,96],412:[-633,240],413:[-568,402],449:[-386,-1161],450:[-293,-1255],451:[-163,-1272],495:[-417,-997],496:[200,49],505:[411,-94],520:[-317,-26],537:[-870,-287],539:[-532,-1166],540:[-598,-1328],541:[-693,-1234],542:[-465,-1327],561:[298,-21],562:[-42,792],591:[148,844],592:[-157,902],643:[-293,770],646:[485,-882],647:[-118,248],717:[621,-676],718:[618,-537],719:[-225,-520],720:[-150,-631],801:[-310,945],802:[-466,911],803:[-588,809],804:[328,374],805:[211,522],819:[-418,-126]};
 		
-		for (var i=0;i<8;i++) {
+		/*for (var i=0;i<8;i++) {	(moved to extended)
 			Game.UpgradePositions[885+i] = [400+100*i,-250-75*i]
-		}
+		}*/
 		
 		
 		for (var i in Game.UpgradePositions) {Game.UpgradesById[i].posX=Game.UpgradePositions[i][0];Game.UpgradesById[i].posY=Game.UpgradePositions[i][1];}
@@ -12948,7 +12994,7 @@ Game.Launch=function()
 		new Game.Achievement('Lucky cookie',loc("Click <b>%1</b>.",loc("%1 golden cookie",LBeautify(7))),[22,6]);
 		new Game.Achievement('A stroke of luck',loc("Click <b>%1</b>.",loc("%1 golden cookie",LBeautify(27))),[23,6]);
 		
-		order=30200;
+		order=30199;
 		new Game.Achievement('Cheated cookies taste awful',loc("Hack in some cookies."),[10,6]);Game.last.pool='shadow';
 		order=11010;
 		new Game.Achievement('Uncanny clicker',loc("Click really, really fast.")+'<q>Well I\'ll be!</q>',[12,0]);
@@ -13876,6 +13922,9 @@ Game.Launch=function()
 		order=1050;
 		new Game.Achievement('All on deck',loc("Have <b>%1</b>.",loc("%1 cursor",LBeautify(900))),[0,19]);
 		new Game.Achievement('A round of applause',loc("Have <b>%1</b>.",loc("%1 cursor",LBeautify(1000)))+'<q>Boy, are my arms tired!</q>',[0,28]);
+
+		order=30199;
+		new Game.Achievement('How convenient!!!!',"Enter <b>Cookivenience mode.</b> <q>Convenient cookies taste... okay, I guess.</q>",[36,1]);Game.last.pool='shadow';
 		
 		//end of achievements
 		
@@ -16654,12 +16703,12 @@ Game.Launch=function()
 				if (Game.Objects["Cursor"].amount>=10) Game.Unlock('True Autoclick');
 				if (Game.Has('True Autoclick')) Game.Unlock('Autoclick switch [off]');
 				
-				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=50) Game.Unlock('Autoclick v1.1');
-				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=100) Game.Unlock('Autoclick v1.2');
-				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=200) Game.Unlock('Autoclick v1.3');
-				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=300) Game.Unlock('Autoclick v1.4');
-				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=400) Game.Unlock('Autoclick v1.5');
-				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].amount>=500) Game.Unlock('Autoclick v1.6');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=0 && Game.Objects["Cursor"].amount>=50) Game.Unlock('Autoclick v1.1');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=1 && Game.Objects["Cursor"].amount>=100) Game.Unlock('Autoclick v1.2');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=2 && Game.Objects["Cursor"].amount>=150) Game.Unlock('Autoclick v1.3');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=3 && Game.Objects["Cursor"].amount>=200) Game.Unlock('Autoclick v1.4');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=4 && Game.Objects["Cursor"].amount>=250) Game.Unlock('Autoclick v1.5');
+				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=5 && Game.Objects["Cursor"].amount>=300) Game.Unlock('Autoclick v1.6');
 				
 				// stinky cheater
 				if (Game.cheaterBoost > 1) Game.Win('Cheated cookies taste awful')
@@ -16789,9 +16838,9 @@ Game.Launch=function()
 		
 		
 		// BISCUITCLICKER LOGIC
-		// TODO would also like to add bulk buy feature for building autobuyers
-		if (Game.T%(Math.round(Game.fps*Game.BADelay()))==0) Game.DoBuildingAutobuyers();
-		if (Game.T%(Math.round(Game.fps*Game.UADelay()))==0) Game.DoUpgradeAutobuyers();
+		if (Game.T%(Math.ceil(Game.fps*Game.BADelay()))==0) Game.DoBuildingAutobuyers();
+		if (Game.T%(Math.ceil(Game.fps*Game.UADelay()))==0) Game.DoUpgradeAutobuyers();
+		if (Game.T%(Math.ceil(Game.fps*10))==0) Game.DoMinigameAutomators(); // TODO should there be a way to speed this up?
 		
 		
 		//every hour: get server data (ie. update notification, patreon, steam etc)
@@ -16852,16 +16901,16 @@ Game.Launch=function()
 				{
 					var me=Game.Objects[i];
 					
-					var buildTierLimit = 12
+					/*var buildTierLimit = 12		(moved to extended)
 					if (Game.Has('Dimension shift')) buildTierLimit++
-					if (Game.Has('building_unlock_2')) buildTierLimit++
-					if (Game.Has('building_unlock_3')) buildTierLimit++
+					if (Game.Has('Lighten up')) buildTierLimit++
+					if (Game.Has('RNGesus\'s Blessing')) buildTierLimit++
 					if (Game.Has('building_unlock_4')) buildTierLimit++
 					if (Game.Has('building_unlock_5')) buildTierLimit++
 					if (Game.Has('building_unlock_6')) buildTierLimit++
 					if (Game.Has('building_unlock_7')) buildTierLimit++
 					if (Game.Has('building_unlock_8')) buildTierLimit++
-					if (me.id >= buildTierLimit) continue
+					if (me.id >= buildTierLimit) continue*/
 					
 					//make products full-opacity if we can buy them
 					var classes='product';
@@ -17056,31 +17105,231 @@ Game.AutomationUnlocked = function() {
 		Game.Objects[objNames[19]].level >= 5 ||
 		false
 }
+Game.BuildingsAutomated = function() {
+	ret = ''
+	for(var i = 0; i < objNames.length; i++) {
+		if(Game.Objects[objNames[i]].level >= 5) ret += objNamesPl[i]+", "
+	}		
+	return ret.substring(0,ret.length-2)
+}
 
 Game.AutomText = function() {
 	return ''+		
 	
 	'<div class="block" style="padding:0px;margin:8px 4px;">'+
 		'<div class="subsection" style="padding:0px;">'+
-			'<div class="title">'+loc("Automation")+'</div>'+
-			
-			
-			'<div class="listing"><label>Your current building autobuyer interval is '+Game.BADelay()+' seconds.</label>'+
-			
-			'<a class="option smallFancyButton" '+Game.clickStr+'="Game.BuyBAIUpg();PlaySound(\'snd/tick.mp3\');">'+loc("Reduce this by 25%<br>for "+
-			Game.BAIUpgPrice()+" sugar lump"+(Game.BAIUpgPrice()!=1?"s":""))+
-			'</a>'+
-			
-			'</div>'+
-			
+			'<div class="title">'+loc("Automation")+'</div>'+	
 			
 			Game.AutomTextBuilds()+
+			
+			Game.MinigameAutomBuilds()+
 			
 		'</div>'+
 	'</div>'+
 	
 	''
 }
+
+Game.MinigameAutomBuilds = function() {
+	var ret = ""
+	
+	
+	for (let i = 0; i < Game.minigameNames.length; i++) {
+		continue; // temp, NYI, TODO
+		if(Game.minigameNames[i] == "Garden" && !Game.hasMMilestone("Farm",6)) continue;
+		if(Game.minigameNames[i] == "Stock Market" && !Game.hasMMilestone("Bank",1)) continue;
+		if(Game.minigameNames[i] == "Pantheon" && !Game.hasMMilestone("Temple",6)) continue;
+		if(Game.minigameNames[i] == "Grimoire" && !Game.hasMMilestone("Wizard tower",7)) continue;
+		
+		
+		ret += '<div class="listing"><label>'+Game.minigameNames[i]+' Auto:</label>'
+		
+		if(Game.minigameNames[i] == "Garden") {
+			ret += Game.WritePrefButton('temp1','temp1b','Autobuy '+1+' ON','Autobuy '+1+' OFF',"console.log(1);")+'</div><br>'
+		}
+		else if(Game.minigameNames[i] == "Stock Market") {
+			//ret += Game.WritePrefButton('temp2','temp2b','Autobuy '+2+' ON','Autobuy '+2+' OFF',"console.log(2);")+'</div><br>'
+			ret += "NYI</div><br>"
+		}
+		else if(Game.minigameNames[i] == "Pantheon") {
+			var godOptions = '<option value="none">None</option>'
+			for(var j=0;j<Game.Objects["Temple"].minigame.godsById.length;j++) {
+				let gName = Game.Objects["Temple"].minigame.godsById[j].name
+				godOptions += '<option value="'+gName.toLowerCase()+'">'+gName+'</option>'
+			}
+
+			let presetAmt = Game.MinigameAutomator["Pantheon"].Autoload.getPresetAmt()
+			var presOptions = '<option value="none">None</option>'
+			for(var j=1;j<=presetAmt;j++) {
+				presOptions += '<option value="'+j+'">'+j+'</option>'
+			}
+			
+			// TODO make these buttons actually do something, and make the stuff save
+			
+			ret += Game.WritePrefButton('loadAuto','loadAutoButton','Autoload ON','Autoload OFF',"console.log(3);")+'<br>'
+						
+			ret += '<label>Pantheon Presets: '+presetAmt+'</label><br>'
+
+			for(var j=0;j<presetAmt;j++) {	
+				ret += '<label>- Preset '+(j+1)+'</label>'
+				
+				for(var k=0;k<3;k++) {
+					ret += '<label>Slot '+(k+1)+':</label><select name="loadAutoSlot('+j+''+k+')" id="loadAutoSlot('+j+''+k+')">'+godOptions+'</select>'
+				}
+				
+				ret += '<br>'
+			}
+
+			ret += '<label>Autoload will load from preset: </label><select name="loadAutoSelect" id="loadAutoSelect">'+presOptions+'</select>'
+			
+			
+			if (Game.hasMMilestone("Temple",11)) { // time control
+				ret += '<br><label><u>Time Control</u>:<br></label>'
+				
+				for(var j=0;j<presetAmt;j++) {	
+					ret += '<label>Autoload preset '+(j+1)+' at:</label>'
+					
+					ret += '<input type="time" id="timeControl'+j+'" name="timeControl'+j+'"> </input>'
+					
+					ret += '<br>'
+				}				
+				
+			
+			
+			
+			}
+			
+			
+			ret += '</div><br>'
+		}
+		else if(Game.minigameNames[i] == "Grimoire") {
+			var spellOptions = '<option value="none">None</option>'
+			for(var j=0;j<Game.Objects["Wizard tower"].minigame.spellsById.length;j++) {
+				let sName = Game.Objects["Wizard tower"].minigame.spellsById[j].name
+				spellOptions += '<option value="'+sName.toLowerCase()+'">'+sName+'</option>'
+				//console.log(sName)
+			}
+			ret = ret +
+			
+			// TODO make these buttons actually do something, and make the stuff save
+			
+			Game.WritePrefButton('castAuto','castAutoButton','Autocast ON','Autocast OFF',"console.log(4);")+
+						
+			Game.WritePrefButton('castAutoMode','castAutoModeButton','Autocast mode:<br>Cast at max magic','Autocast mode:<br>Cast if can afford',"console.log(4);")+			
+
+			'<br>'+
+			'<label>- Selected spell to autocast:</label><select name="castAutoSpell" id="castAutoSpell">'+spellOptions+'</select>'+
+
+			(Game.hasMMilestone("Wizard tower",11)?'<br>'+Game.WritePrefButton('castAutoDIFirst','castAutoDIFirstButton','Diminish Ineptitude First ON','Diminish Ineptitude First OFF',"console.log(4);")+Game.WritePrefButton('castAutoAvoidBackfire','castAutoAvoidBackfireButton','Never autocast if it will backfire ON','Never autocast if it will backfire OFF',"console.log(4);"):'')+
+			
+			(Game.hasMMilestone("Wizard tower",13)?Game.WritePrefButton('castAutoDualcast','castAutoDualcastButton','Auto Dualcast ON<br>(NYI)','Auto Dualcast OFF<br>(NYI)',"console.log(4);"):'')+
+			
+			'</div><br>'
+			
+			
+		}
+	}
+	
+	
+	
+	
+	if (ret) ret = '<div class="line"></div>'+'<div class="subtitle" style="margin-top:16px">Minigame Automation</div><br>'+
+	'<div class="listing" style="margin-top:12px;margin-bottom:18px"><label>Minigame automators activate every '+10+' seconds.</label></div>'+
+	ret+'<br>'
+	
+	return ret
+}
+
+Game.DoGardenAutomator = function() {
+	//let ga = Game.MinigameAutomator["Garden"]
+	/*if (ga.Autoharvester.on && Game.hasMMilestone("Farm",6)) {
+		// TODO NYI
+	}*/
+}
+Game.DoStockMarketAutomator = function() {
+	//let sa = Game.MinigameAutomator["Stock Market"]
+	/*if (sa.SomethingOrOther.on && Game.hasMMilestone("Bank",69)) {
+		// TODO NYI
+	}*/
+}
+Game.DoPantheonAutomator = function() {
+	//let pa = Game.MinigameAutomator["Pantheon"]
+	let auto = Game.MinigameAutomator["Pantheon"].Autoload
+	if(!auto.on) return
+	if (Game.hasMMilestone("Temple",6)) { // automation unlock at level 6
+		let M = Game.Objects["Temple"].minigame
+		var selectedPId = auto.selPreset
+		if(isNaN(selectedPId) || selectedPId < 0 || selectedPId >= auto.getPresetAmt()) return
+		
+		if(Game.hasMMilestone("Temple",11)) {// Time control
+			let currHour = new Date().getHours() // 0 (midnight) - 23 (11 PM)
+			let currMin = new Date().getMinutes() // 0-60
+			for(var i = 0; i < auto.getPresetAmt(); i++) {
+				if(!auto.presetTimes[i]) continue
+				let checkTime = auto.presetTimes[i].split(":")
+				let checkHour = parseInt(checkTime[0])
+				let checkMin = parseInt(checkTime[1])
+
+				if ((checkHour == currHour) && (Math.abs(checkMin-currMin) < 1)) {
+					auto.selPreset = i
+					selectedPId = i				
+				}
+			}		
+		}
+		
+		var selectedPreset = auto.presets[selectedPId]
+		if(!selectedPreset) return
+		
+		var swapCost = 0
+		let currentBuild = M.slot 
+		let desiredBuild = selectedPreset
+		
+		for(var i = 0; i < desiredBuild.length; i++) {
+			if (desiredBuild[i] == currentBuild[i]) continue // already the right god
+			swapCost += 1
+		}
+		
+		if(swapCost == 0 || swapCost > M.swaps) return // no change or can't afford
+		
+		for(var i = 0; i < desiredBuild.length; i++) {
+			if (desiredBuild[i] == currentBuild[i]) continue // already the right god
+			M.dragging = M.godsById[desiredBuild[i]]
+			M.slotHovered = i
+			M.dropGod()
+			M.dragging = false
+			M.slotHovered = -1
+		}		
+		
+	}
+}
+Game.DoGrimoireAutomator = function() {
+	//let ga = Game.MinigameAutomator["Grimoire"]
+	let auto = Game.MinigameAutomator["Grimoire"].Autocast
+	if(!auto.on) return
+	if (Game.hasMMilestone("Wizard tower",7)) { // automation unlock at level 7
+		let M = Game.Objects["Wizard tower"].minigame
+		let spellToAutocast = M.spells[auto.spell]
+		if(!spellToAutocast) return // can't cast a spell that doesn't exist (such as "none")
+		if(auto.avoidBackfire && 
+			Game.hasMMilestone("Wizard tower",11) && 
+			M.predictBackfire(spellToAutocast)[3]) return // don't cast if backfire and avoiding backfire
+		if(auto.mode && (M.magic < M.magicM)) return // only cast at full magic
+		if(!auto.mode) {
+			cost = M.getSpellCost(spellToAutocast)
+			if (auto.castDIFirst && Game.hasMMilestone("Wizard tower",11)) cost += M.getSpellCost(M.spells["diminish ineptitude"])
+			//console.log(cost)
+			if (isNaN(cost) || cost > M.magic) return
+		}
+		
+		// if func didn't return, the spell should be cast
+		M.castSpell(spellToAutocast) 
+		
+		if (Game.hasMMilestone("Wizard tower",13)) { 
+			// TODO auto dualcast
+		}
+	}
+}
+
 Game.AutomTextBuilds = function() {
 	var ret = ""
 	for (let i = 0; i < objNames.length; i++) {
@@ -17099,6 +17348,19 @@ Game.AutomTextBuilds = function() {
 			)+')</label>'+'</div><br>'
 		}
 	}
+	if (ret) { 
+		ret = '<div class="subtitle" style="margin-top:16px">Building Automation</div><br>'+
+	
+		'<div class="listing"><label>Your current building autobuyer interval is '+Game.BADelay()+' seconds.</label>'+
+				
+		'<a class="option smallFancyButton" '+Game.clickStr+'="Game.BuyBAIUpg();PlaySound(\'snd/tick.mp3\');">'+loc("Reduce this by 25%<br>for "+
+		Game.BAIUpgPrice()+" sugar lump"+(Game.BAIUpgPrice()!=1?"s":""))+
+		'</a>'+
+			
+		'</div>'+ret
+	
+	}
+	
 	return ret
 }
 Game.DisableAuto = function(num) {
@@ -17177,9 +17439,304 @@ Game.BuyUAIUpg = function() {
 	})();
 }
 
-Game.heraldAscensionBoost = function() {
+Game.heraldAscensionBoost = function() { // In BISCUITCLICKER, heralds boost production by (resets)% instead of 41% or patrons% or whatever it is
 	return Math.min(Game.resets,100)//+Math.min(Math.max((Game.resets-100)/10,0),100)
 }
+
+Game.getOfflinePercent = function() {
+	var percent = 0;
+	if (Game.Has('Offline Baker')) percent = 100;
+	if (Game.Has('Twin Gates of Transcendence')) percent+=5;
+	if (Game.Has('Angels')) percent+=10;
+	if (Game.Has('Archangels')) percent+=10;
+	if (Game.Has('Virtues')) percent+=10;
+	if (Game.Has('Dominions')) percent+=10;
+	if (Game.Has('Cherubim')) percent+=10;
+	if (Game.Has('Seraphim')) percent+=10;
+	if (Game.Has('God')) percent+=10;
+	
+	if (Game.Has('Chimera')) {maxTime+=60*60*24*2;percent+=5;}
+	
+	if (Game.Has('Fern tea')) percent+=3;
+	if (Game.Has('Ichor syrup')) percent+=7;
+	if (Game.Has('Fortune #102')) percent+=1;
+	
+	if (percent > 100) percent = Math.round(100+(percent-100)**0.8) // Weaken offline production boost after 100%
+	if (percent > 100 && !Game.Cookivenience) percent = 100 // cap at 100% when Cookivenience is off
+	
+	return percent
+}
+
+Game.Cookivenience = false
+Game.activateCookivenience = function(bypass) { // enter Cookivenience mode
+	if (!bypass)
+	{
+		Game.Prompt('<id Cookivenience><h3>'+loc("Enter Cookivenience")+'</h3><div class="block">'+tinyIcon([36,1])+'<div class="line"></div>'+loc("Do you REALLY want to enter Cookivenience mode?<br><small>This can't be undone!</small>")+'</div>',[[EN?'Yes!':loc("Yes"),'Game.ClosePrompt();Game.activateCookivenience(1);','float:left'],[loc("No"),0,'float:right']]);
+	}
+	else if (bypass==1)
+	{
+		Game.Prompt('<id ReallyCookivenience><h3>'+loc("Enter Cookivenience")+'</h3><div class="block">'+tinyIcon([36,1])+'<div class="line"></div>'+loc("You sure now?<br><small>Remember, this permanently marks your save, and makes the game a bit easier than the original dev intended!</small>")+'</div>',[[EN?'Do it!':loc("Yes"),'Game.ClosePrompt();Game.activateCookivenience(2);','float:left'],[loc("No"),0,'float:right']]);
+	}
+	else
+	{
+	
+		Game.Cookivenience = true
+		Game.setupShortMilestoneText()
+		Game.Win('How convenient!!!!')
+		Game.UpdateMenu()
+	
+	}
+}
+
+Game.setupShortMilestoneText = function(){
+	// Minigame automation and QoL from sugar lump tiers (must be refreshed if Cookivenience mode is changed)
+	Game.GardenMilestonesText = {};
+	Game.GardenMilestonesText[5] = "unlocks Plant Fill"
+	Game.GardenMilestonesText[6] = "unlocks Autoharvester"
+	Game.GardenMilestonesText[7] = Game.Cookivenience?"unlocks Autoplanter and halves soil swap cooldown":"unlocks Autoplanter"
+	Game.GardenMilestonesText[8] = "unlocks Autoweeder"
+	Game.GardenMilestonesText[9] = "unlocks more Autoharvester options"
+	Game.GardenMilestonesText[10] = "unlocks 3 garden presets for Autoplanter"
+	Game.GardenMilestonesText[11] = Game.Cookivenience?"reduces soil swap cooldown to 1 minute":""//REMOVED: and gives +1 garden preset
+	Game.GardenMilestonesText[12] = "unlocks more Autoharvester/Autoplanter options"//and +1 garden preset
+	Game.GardenMilestonesText[13] = Game.Cookivenience?"auto unlocks seeds from mature plants":""//and gives +1 garden preset
+	Game.GardenMilestonesText[14] = Game.Cookivenience?"increases plant mutation rate slightly":""
+	Game.GardenMilestonesText[15] = "unlocks Autosacrifice"
+
+	Game.StockMarketMilestonesText = {};
+	Game.StockMarketMilestonesText[5] = "idk"
+	Game.StockMarketMilestonesText[6] = "please"
+	Game.StockMarketMilestonesText[7] = "help"
+	Game.StockMarketMilestonesText[8] = "me"
+	Game.StockMarketMilestonesText[9] = "the"
+	Game.StockMarketMilestonesText[10] = "stock"
+	Game.StockMarketMilestonesText[11] = "market"
+	Game.StockMarketMilestonesText[12] = "is"
+	Game.StockMarketMilestonesText[13] = "way"
+	Game.StockMarketMilestonesText[14] = "too"
+	Game.StockMarketMilestonesText[15] = "complicated"
+
+	Game.PantheonMilestonesText = {};
+	Game.PantheonMilestonesText[5] = Game.Cookivenience?"increases worship swap refill by 10% per missing swap":""
+	Game.PantheonMilestonesText[6] = "unlocks auto-load and 2 auto-load presets"
+	Game.PantheonMilestonesText[7] = "unlocks another 2 auto-load presets"
+	Game.PantheonMilestonesText[8] = Game.Cookivenience?"increases worship swap refill by another 10% per missing swap":""
+	Game.PantheonMilestonesText[9] = "unlocks yet another 2 auto-load presets"
+	Game.PantheonMilestonesText[10] = Game.Cookivenience?"increases worship swap maximum to 4":""
+	Game.PantheonMilestonesText[11] = "unlocks time control for auto-load presets"
+	Game.PantheonMilestonesText[12] = "unlocks still another 2 auto-load presets"
+	Game.PantheonMilestonesText[13] = Game.Cookivenience?"increases worship swap refill by 5% per missing swap":""
+	Game.PantheonMilestonesText[14] = Game.Cookivenience?"doubles worship swap refill if you have no swaps":""
+	Game.PantheonMilestonesText[15] = "unlocks 3 final auto-load presets"
+
+	Game.GrimoireMilestonesText = {};
+	Game.GrimoireMilestonesText[5] = "unlocks backfire prediction"
+	Game.GrimoireMilestonesText[6] = Game.Cookivenience?"multiplies magic gain rate by 1.2":""
+	Game.GrimoireMilestonesText[7] = "unlocks auto-cast"
+	Game.GrimoireMilestonesText[8] = Game.Cookivenience?"reduces backfire chance by a third":""
+	Game.GrimoireMilestonesText[9] = Game.Cookivenience?"multiplies magic gain rate by 1.2 again":""
+	Game.GrimoireMilestonesText[10] = "unlocks golden cookie prediction"
+	Game.GrimoireMilestonesText[11] = "unlocks more auto-cast options"
+	Game.GrimoireMilestonesText[12] = Game.Cookivenience?"multiplies magic gain rate by 1.2 yet again":""
+	Game.GrimoireMilestonesText[13] = "unlocks auto-dualcasting (NYI)" // and more? TODO add advanced logic, something to do with presets?
+	Game.GrimoireMilestonesText[14] = Game.Cookivenience?"reduces backfire chance by another third (2/3 total)":""
+	Game.GrimoireMilestonesText[15] = Game.Cookivenience?"multiplies magic gain rate by 1.15 and reduces regain rate penalty for low magic":""
+}
+Game.setupShortMilestoneText()
+
+Game.levelMilestoneText = function(bName, bLevel) {
+	if(bLevel>=5 && bLevel<=25) { // i need to change this if i ever add milestones past level 25
+		var ret = ''
+
+		if(bName == "Farm") ret = Game.GardenMilestonesText[bLevel]
+		if(bName == "Bank") ret = Game.StockMarketMilestonesText[bLevel]
+		if(bName == "Temple") ret = Game.PantheonMilestonesText[bLevel]
+		if(bName == "Wizard tower") ret = Game.GrimoireMilestonesText[bLevel]
+		
+		if(!ret) return ''
+		
+		let haveLine = ((bLevel != 5)?'<div class="line"></div><b>Levelling up this building to level '+bLevel:'<b> and ')
+		ret = haveLine+' '+ret+'.</b>'
+		return ret
+	}
+	return ''
+}
+
+Game.minigameBuildings = ["Farm","Bank","Temple","Wizard tower"]
+Game.minigameNames = ["Garden","Stock Market","Pantheon","Grimoire"]
+
+Game.hasMMilestone = function(neededBuilding,neededLevel) {
+	if(Game.minigameBuildings.includes(neededBuilding))
+		return (Game.Objects[neededBuilding].level >= neededLevel)
+	else // do i need this? checking to make sure buildings without minigames never return true, but does it matter if they do?
+		return false
+}
+
+
+Game.getMinigameMilestoneString = function(mgTitle) {
+	for(var mBuilding = 0; mBuilding < Game.minigameBuildings.length; mBuilding++) {
+		if(mgTitle == Game.minigameNames[mBuilding]) {
+			console.log(1)
+			var ret = ""
+			var lastI = 0
+			var nextLevel = 0
+			for(var i = 5; i <= 25; i++) {
+				let mText = (Game.getMMDesc(Game.minigameBuildings[mBuilding],i))
+				if(mText) {
+					ret += '<div class="listing"><b>Level '+i+':</b> '+mText+'</div>'
+					lastI = i
+				}
+			}
+			for(var i = lastI+1; i <= 25; i++) {
+				let mText = (Game.getMMDesc(Game.minigameBuildings[mBuilding],i,false))
+				if(mText) {
+					nextLevel = i
+					break
+				}
+			}			
+			ret += '<div class="listing"><b>'+
+			(nextLevel>0?'The '+(lastI>0?'next':'first')+' milestone unlocks at '+Game.minigameBuildings[mBuilding].toLowerCase()+' level '+i:'There are no more milestones for this minigame!')+
+			'</b> </div><br><br>'
+			return ret
+		}
+	}
+	return ''
+}
+
+Game.getMMDesc = function(mBuilding,i,req=true) {
+	if (!Game.hasMMilestone(mBuilding,i) && req) return ''//Game.Objects[mBuilding].level+5>i?'???':''
+	
+	if (mBuilding == "Farm") {
+		if (i == 5) return "Unlocks Plant Fill"
+		if (i == 6) return "Unlocks the Autoharvester"
+		if (i == 7) return Game.Cookivenience?"Unlocks the Autoplanter and halves the delay between soil swaps":"Unlocks the Autoplanter"
+		if (i == 8) return "Unlocks the Autoweeder"
+		if (i == 9) return "Unlocks fine-tuned control options for the Autoharvester"
+		if (i == 10) return "Unlocks Garden Presets for the Autoplanter"
+		if (i == 11) return Game.Cookivenience?"Reduces the delay between soil swaps to one minute":""
+		if (i == 12) return "Unlocks more options for the Autoharvester and the Autoplanter"
+		if (i == 13) return Game.Cookivenience?"Automatically unlocks seeds of any mature plants planted in the Garden, without needing to harvest them":""
+		if (i == 14) return Game.Cookivenience?"Increases plant mutation rate slightly":""
+		if (i == 15) return "Unlocks automation for Sacrifice Garden"
+		if (i > 15) return ""
+	}
+	if (mBuilding == "Bank") {
+		if (i == 5) return "idk"
+		if (i == 6) return "please"
+		if (i == 7) return "help"
+		if (i == 8) return "me"
+		if (i == 9) return "the"
+		if (i == 10) return "stock"
+		if (i == 11) return "market"
+		if (i == 12) return "is"
+		if (i == 13) return "way"
+		if (i == 14) return "too"
+		if (i == 15) return "complicated"
+		if (i > 15) return ""
+	}
+	if (mBuilding == "Temple") {
+		if (i == 5) return Game.Cookivenience?"Worship swaps refill 10% faster for every missing worship swap":""
+		if (i == 6) return "Unlocks Auto-Load and two Auto-Load presets"
+		if (i == 7) return "Unlocks two more Auto-Load presets"
+		if (i == 8) return Game.Cookivenience?"Worship swaps refill 10% faster for every missing worship swap":""
+		if (i == 9) return "Unlocks two more Auto-Load presets"
+		if (i == 10) return Game.Cookivenience?"You can have up to 4 worship swaps (the fourth's refill time is the same as the third)":""
+		if (i == 11) return "Unlocks time control for auto-load presets"
+		if (i == 12) return "Unlocks two more Auto-Load presets"
+		if (i == 13) return Game.Cookivenience?"Worship swaps refill 5% faster for every missing worship swap":""
+		if (i == 14) return Game.Cookivenience?"Doubles worship swap refill rate if you have no swaps remaining":""
+		if (i == 15) return "Unlocks three more Auto-Load presets"
+		if (i > 15) return ""
+	}
+	if (mBuilding == "Wizard tower") {
+		if (i == 5) return "Unlocks the ability to predict whether your next spell will backfire or not"
+		if (i == 6) return Game.Cookivenience?"Multiplies magic gain rate by 1.2x":""
+		if (i == 7) return "Unlocks auto-cast"
+		if (i == 8) return Game.Cookivenience?"Reduces backfire chance by a third":""
+		if (i == 9) return Game.Cookivenience?"Multiplies magic gain rate by 1.2x":""
+		if (i == 10) return "Unlocks the ability to predict what your next summoned Golden Cookie's effect will be"
+		if (i == 11) return "Unlocks the options to start auto-casts with Diminish Ineptitude and to avoid auto-casting backfires"
+		if (i == 12) return Game.Cookivenience?"Multiplies magic gain rate by 1.2x":""
+		if (i == 13) return "Unlocks an option to auto-dualcast (NYI)" // and more? TODO add advanced logic, something to do with presets?
+		if (i == 14) return Game.Cookivenience?"Reduces backfire chance by a third (reducing it by two thirds total)":""
+		if (i == 15) return Game.Cookivenience?"Multiplies magic gain rate by x1.1574 (total 2x rate boost) and reduces the regain rate penalty for having low magic":""
+		if (i > 15) return ""
+	}
+	
+	return ''
+}
+
+
+// TODO saving the minigame automator
+Game.ResetMinigameAutomators = function() {
+	Game.MinigameAutomator = {}
+	
+	Game.MinigameAutomator["Garden"] = {}
+	Game.MinigameAutomator["Garden"].Autoharvester = {}
+	Game.MinigameAutomator["Garden"].Autoharvester.on = false
+	Game.MinigameAutomator["Garden"].Autoharvester.keepfill = []
+	Game.MinigameAutomator["Garden"].Autoharvester.harvestYoung = false
+	Game.MinigameAutomator["Garden"].Autoharvester.harvestMature = false
+	Game.MinigameAutomator["Garden"].Autoharvester.harvestDying = false
+	Game.MinigameAutomator["Garden"].Autoharvester.harvestImmortals = false
+	Game.MinigameAutomator["Garden"].Autoharvester.cleanGarden = false
+	Game.MinigameAutomator["Garden"].Autoharvester.checkCpsMult = false
+	Game.MinigameAutomator["Garden"].Autoharvester.miniCpsMult = false
+	Game.MinigameAutomator["Garden"].Autoharvester.checkCpsMultDying = false
+	Game.MinigameAutomator["Garden"].Autoharvester.miniCpsMultDying = false
+	Game.MinigameAutomator["Garden"].Autoplanter = {}
+	Game.MinigameAutomator["Garden"].Autoplanter.on = false
+	Game.MinigameAutomator["Garden"].Autoplanter.keepfill = [] // made redundant by presets
+	Game.MinigameAutomator["Garden"].Autoplanter.seedtype = '' // made redundant by presets
+	Game.MinigameAutomator["Garden"].Autoplanter.presets = []
+	Game.MinigameAutomator["Garden"].Autoplanter.checkCpsMult = false
+	Game.MinigameAutomator["Garden"].Autoplanter.maxiCpsMult = false
+	Game.MinigameAutomator["Garden"].Autoweeder = {}
+	Game.MinigameAutomator["Garden"].Autoweeder.on = false
+	Game.MinigameAutomator["Garden"].Autoweeder.keepfill = []
+	Game.MinigameAutomator["Garden"].Autosacrifice = {}
+	Game.MinigameAutomator["Garden"].Autosacrifice.on = false
+	
+	Game.MinigameAutomator["Stock Market"] = {}
+	
+	Game.MinigameAutomator["Pantheon"] = {}
+	Game.MinigameAutomator["Pantheon"].Autoload = {};
+	Game.MinigameAutomator["Pantheon"].Autoload.on = false;
+	Game.MinigameAutomator["Pantheon"].Autoload.presets = [];
+	Game.MinigameAutomator["Pantheon"].Autoload.presetTimes = [];
+	Game.MinigameAutomator["Pantheon"].Autoload.selPreset = -1;
+	Game.MinigameAutomator["Pantheon"].Autoload.getPresetAmt = function(){
+		var presetAmt = 0
+		
+		if(Game.hasMMilestone("Temple",6)) presetAmt += 2
+		if(Game.hasMMilestone("Temple",7)) presetAmt += 2
+		if(Game.hasMMilestone("Temple",9)) presetAmt += 2
+		if(Game.hasMMilestone("Temple",12)) presetAmt += 2
+		if(Game.hasMMilestone("Temple",15)) presetAmt += 3
+		
+		return presetAmt
+	};
+	
+	Game.MinigameAutomator["Grimoire"] = {}
+	Game.MinigameAutomator["Grimoire"].Autocast = {};
+	Game.MinigameAutomator["Grimoire"].Autocast.on = false;
+	Game.MinigameAutomator["Grimoire"].Autocast.spell = "none";
+	Game.MinigameAutomator["Grimoire"].Autocast.mode = false;
+	Game.MinigameAutomator["Grimoire"].Autocast.castDIFirst = false;
+	Game.MinigameAutomator["Grimoire"].Autocast.avoidBackfire = false;
+	Game.MinigameAutomator["Grimoire"].Autocast.dualcast = false;
+	// TODO (?) Advanced logic for spells, time/algorithm based spell cast order of different spells instead of just casting the same spell, not sure how to implement this	
+	//Game.MinigameAutomator["Grimoire"].Autocast.presets = [];
+}
+Game.ResetMinigameAutomators()
+
+Game.DoMinigameAutomators = function() {
+	Game.DoGardenAutomator();
+	Game.DoStockMarketAutomator();
+	Game.DoPantheonAutomator();
+	Game.DoGrimoireAutomator();
+}
+
 
 /*=====================================================================================
 LAUNCH THIS THING

@@ -132,6 +132,7 @@ M.launch=function()
 			'Diamond','Ruby','Jade'
 		];
 		
+		M.getSwapCap = function(){return ((Game.Cookivenience && Game.hasMMilestone("Temple",10)) ? 4 : 3)}
 		M.swaps=3;//swaps left
 		M.swapT=Date.now();//the last time we swapped
 		
@@ -420,9 +421,9 @@ M.launch=function()
 			'</div>';
 		};
 		AddEvent(M.lumpRefill,'click',function(){
-			if (M.swaps<3)
+			if (M.swaps<M.getSwapCap())
 			{Game.refillLump(1,function(){
-				M.swaps=3;
+				M.swaps=M.getSwapCap();
 				M.swapT=Date.now();
 				PlaySound('snd/pop'+Math.floor(Math.random()*3+1)+'.mp3',0.75);
 			});}
@@ -464,7 +465,7 @@ M.launch=function()
 	}
 	M.reset=function()
 	{
-		M.swaps=3;
+		M.swaps=M.getSwapCap();
 		M.swapT=Date.now();
 		for (var i in M.slot) {M.slot[i]=-1;}
 		for (var i in M.gods)
@@ -476,14 +477,20 @@ M.launch=function()
 			other.style.display='none';
 		}
 	}
+	M.getTimeMult=function(){
+		let missingSwaps = 3 - M.swaps // this intentionally doesn't take the fourth swap into account
+		let missingSwapBoost = (Game.Cookivenience?((Game.hasMMilestone("Temple",5)?(1.1**missingSwaps):1)*(Game.hasMMilestone("Temple",8)?(1.1**missingSwaps):1)*(Game.hasMMilestone("Temple",13)?(1.05**missingSwaps):1)*((Game.hasMMilestone("Temple",14)&&M.swaps==0)?2:1)):1)
+		var t=1000*60*60/(Game.cheaterBoost*missingSwapBoost);
+		if (M.swaps==0) t *= 16;
+		else if (M.swaps==1) t *= 4;
+		return t
+	}
 	M.logic=function()
 	{
 		//run each frame
-		var t=1000*60*60/Game.cheaterBoost;
-		if (M.swaps==0) t=1000*60*60*16/Game.cheaterBoost;
-		else if (M.swaps==1) t=1000*60*60*4/Game.cheaterBoost;
+		var t = M.getTimeMult()
 		var t2=M.swapT+t-Date.now();
-		if (t2<=0 && M.swaps<3) {M.swaps++;M.swapT=Date.now();}
+		if (t2<=0 && M.swaps<M.getSwapCap()) {M.swaps++;M.swapT=Date.now();}
 		M.lastSwapT++;
 	}
 	M.draw=function()
@@ -502,11 +509,9 @@ M.launch=function()
 			}
 			l('templeGod'+M.dragging.id).style.transform='translate('+(x)+'px,'+(y)+'px)';
 		}
-		var t=1000*60*60/Game.cheaterBoost;
-		if (M.swaps==0) t=1000*60*60*16/Game.cheaterBoost;
-		else if (M.swaps==1) t=1000*60*60*4/Game.cheaterBoost;
+		var t = M.getTimeMult()
 		var t2=M.swapT+t-Date.now();
-		if (Game.drawT%5==0) M.swapsL.innerHTML=loc("Worship swaps: %1",'<span class="titleFont" style="color:'+(M.swaps>0?'#fff':'#c00')+';">'+M.swaps+'/'+(3)+'</span>')+((M.swaps<3)?' ('+loc("next in %1",Game.sayTime((t2/1000+1)*Game.fps,-1))+')':'');
+		if (Game.drawT%5==0) M.swapsL.innerHTML=loc("Worship swaps: %1",'<span class="titleFont" style="color:'+(M.swaps>0?'#fff':'#c00')+';">'+M.swaps+'/'+(M.getSwapCap())+'</span>')+((M.swaps<M.getSwapCap())?' ('+loc("next in %1",Game.sayTime((t2/1000+1)*Game.fps,-1))+')':'');
 	}
 	M.init(l('rowSpecial'+M.parent.id));
 }

@@ -123,7 +123,7 @@ a:active
 	/*box-shadow:0px 0px 12px #000 inset;*/
 }
 
-.titleFont,.title,.section,.lockedTitle,.smallFancyButton
+.titleFont,.title,.subtitle,.section,.lockedTitle,.smallFancyButton
 {
 	font-family: 'Merriweather', Georgia,serif;
 }
@@ -194,6 +194,13 @@ SECTIONS
 	margin:6px 0px;
 	margin-left:-16px;
 }
+.subsection div.subtitle
+{
+	font-size:18px;
+	padding-left:16px;
+	margin-bottom:-10px;
+}
+
 .update
 {
 	-webkit-touch-callout: auto;
