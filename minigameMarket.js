@@ -664,7 +664,7 @@ M.launch=function()
 						if (x>=width-span*iR-span-2 && x<=width-span*iR+2 && y>=height-min*M.graphScale-6 && y<=height-min*M.graphScale+Math.max(3,max*M.graphScale)+6)
 						{
 							isOnLine=i;
-							Game.tooltip.draw(0,'<div style="width:128px;font-size:10px;text-align:center;" id="tooltipMarketLine"><div class="icon" style="pointer-events:none;display:inline-block;transform:scale(0.5);margin:-16px -18px -16px -14px;vertical-align:middle;background-position:'+(-me.icon[0]*48)+'px '+(-me.icon[1]*48)+'px;"></div> <b>'+me.name.replace('%1',Game.bakeryName)+'</b><br>'+loc("valued at %1",'<b>$'+Beautify(me.vals[0+iR],2)+'</b>')+'<br>'+loc("%1 ago",Game.sayTime((iR+1)*M.secondsPerTick*Game.fps))+'</div>','top');
+							Game.tooltip.draw(0,'<div style="width:128px;font-size:10px;text-align:center;" id="tooltipMarketLine"><div class="icon" style="pointer-events:none;display:inline-block;transform:scale(0.5);margin:-16px -18px -16px -14px;vertical-align:middle;background-position:'+(-me.icon[0]*48)+'px '+(-me.icon[1]*48)+'px;"></div> <b>'+me.name.replace('%1',Game.bakeryName)+'</b><br>'+loc("valued at %1",'<b>$'+Beautify(me.vals[0+iR],2)+'</b>')+'<br>'+loc("%1 ago",Game.sayTime((iR+1)*M.secondsPerTick*Game.fps / Game.cheaterBoost))+'</div>','top');
 							break bankGraphMouseDetect;
 						}
 					}
@@ -887,7 +887,7 @@ M.launch=function()
 		//run each frame
 		
 		M.tickT++;
-		if (M.tickT>=Game.fps*M.secondsPerTick)
+		if (M.tickT>=Game.fps*M.secondsPerTick / Game.cheaterBoost)
 		{
 			M.tickT=0;
 			M.tick();
@@ -1105,7 +1105,7 @@ M.launch=function()
 			if (M.profit>0) {it.classList.add('bankSymbolUp');it.classList.remove('bankSymbolDown');}
 			else if (M.profit<0) {it.classList.add('bankSymbolDown');it.classList.remove('bankSymbolUp');}
 			
-			l('bankNextTick').innerHTML=loc("Next tick in %1.",Game.sayTime((Game.fps*M.secondsPerTick)-M.tickT+30,-1));
+			l('bankNextTick').innerHTML=loc("Next tick in %1.",Game.sayTime((Game.fps*M.secondsPerTick / Game.cheaterBoost)-M.tickT+30,-1));
 		}
 	}
 	M.init(l('rowSpecial'+M.parent.id));

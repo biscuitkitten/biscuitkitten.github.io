@@ -1243,7 +1243,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.5 BETA" // "0.6"
+Game.modVersion="0.5.2" // "0.6"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -17807,7 +17807,7 @@ Game.DoGardenAutomator = function() {
 				if (plantAge>=plantType.mature) stage=4;
 				var dying=((plantAge+Math.ceil(plantType.ageTick+plantType.ageTickR))>=100?1:0);
 		
-				if((!Game.hasMMilestone("Farm",9)) || 
+				if((!Game.hasMMilestone("Farm",9) && stage==4) || 
 					((autoharvest.harvestImmortals || !(plantType.immortal)) && 
 					((autoharvest.harvestYoung && plantType.unlocked) || 
 					(autoharvest.harvestMature && stage==4) || 
@@ -17860,7 +17860,7 @@ Game.DoGardenAutomator = function() {
 				else {
 					if(isNaN(autoplant.seedtype)) autoplant.seedtype = -1
 					if (autoplant.keepfill[6*y+x] && autoplant.seedtype != -1) {
-						let seedplant = plantsById[autoplant.seedtype]
+						let seedplant = M.plantsById[autoplant.seedtype]
 						//console.log("plant "+seedplant.name+" in plot "+x+", "+y)
 						M.useTool(seedplant.id,x,y,true)
 					}					
