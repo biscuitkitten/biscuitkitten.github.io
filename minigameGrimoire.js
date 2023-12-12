@@ -508,7 +508,7 @@ M.launch=function()
 				predGCook=choose(choices);
 
 
-				if (predGCook=='Building Special')
+				/*if (predGCook=='Building Special')
 				{
 					var list=[];
 					for (var i in Game.Objects)
@@ -521,7 +521,7 @@ M.launch=function()
 						let pickBId = choose(list);
 						predGCook = Game.goldenCookieBuildingBuffs[Game.ObjectsById[pickBId].name][0]+' (or some other building special)';
 					}
-				}
+				}*/
 
 
 			}

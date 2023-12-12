@@ -1119,9 +1119,10 @@ M.launch=function()
 				children+='</div>';
 			}
 			var dragonBoost=1/(1+0.05*Game.auraMult('Supreme Intellect'));
+			var mile14Boost=(Game.Cookivenience&&Game.hasMMilestone("Farm",14)?1/(1.05):1);
 			return '<div class="description">'+
-						(!me.immortal?('<div style="margin:6px 0px;font-size:11px;"><b>'+loc("Average lifespan:")+'</b> '+Game.sayTime(((100/(me.ageTick+me.ageTickR/2))*dragonBoost*M.stepT)*30,-1)+' <small>('+loc("%1 tick",LBeautify(Math.ceil((100/((me.ageTick+me.ageTickR/2)/dragonBoost))*(1))))+')</small></div>'):'')+
-						'<div style="margin:6px 0px;font-size:11px;"><b>'+loc("Average maturation:")+'</b> '+Game.sayTime(((100/((me.ageTick+me.ageTickR/2)))*(me.mature/100)*dragonBoost*M.stepT)*30,-1)+' <small>('+loc("%1 tick",LBeautify(Math.ceil((100/((me.ageTick+me.ageTickR/2)/dragonBoost))*(me.mature/100))))+')</small></div>'+
+						(!me.immortal?('<div style="margin:6px 0px;font-size:11px;"><b>'+loc("Average lifespan:")+'</b> '+Game.sayTime(((100/(me.ageTick+me.ageTickR/2))*dragonBoost*mile14Boost*M.stepT)*30,-1)+' <small>('+loc("%1 tick",LBeautify(Math.ceil((100/((me.ageTick+me.ageTickR/2)/(dragonBoost*mile14Boost)))*(1))))+')</small></div>'):'')+
+						'<div style="margin:6px 0px;font-size:11px;"><b>'+loc("Average maturation:")+'</b> '+Game.sayTime(((100/((me.ageTick+me.ageTickR/2)))*(me.mature/100)*dragonBoost*mile14Boost*M.stepT)*30,-1)+' <small>('+loc("%1 tick",LBeautify(Math.ceil((100/((me.ageTick+me.ageTickR/2)/(dragonBoost*mile14Boost)))*(me.mature/100))))+')</small></div>'+
 						(me.weed?'<div style="margin:6px 0px;font-size:11px;"><b>'+(EN?"Is a weed":loc("Weed"))+'</b></div>':'')+
 						(me.fungus?'<div style="margin:6px 0px;font-size:11px;"><b>'+(EN?"Is a fungus":loc("Fungus"))+'</b></div>':'')+
 						(me.detailsStr?('<div style="margin:6px 0px;font-size:11px;"><b>'+loc("Details:")+'</b> '+me.detailsStr+'</div>'):'')+
@@ -1209,7 +1210,11 @@ M.launch=function()
 					var str='<div style="padding:8px 4px;min-width:350px;text-align:center;" id="tooltipGardenTile">'+
 						'<div class="name">'+loc("Empty tile")+'</div>'+'<div class="line"></div><div class="description">'+
 							loc("This tile of soil is empty.<br>Pick a seed and plant something!")+
-							(me?'<div class="line"></div>'+loc("Click to plant %1 for %2.",['<b>'+me.name+'</b>','<span class="price'+(M.canPlant(me)?'':' disabled')+'">'+Beautify(Math.round(M.getCost(me)))+'</span>'])+'<br><small>('+loc("%1 to plant multiple.",loc("Shift-click"))+')</small>'+(EN?'<br><small>(Holding the shift key pressed will also hide tooltips.)</small>':''):'')+
+							(me?'<div class="line"></div>'+loc("Click to plant %1 for %2.",['<b>'+me.name+'</b>','<span class="price'+(M.canPlant(me)?'':' disabled')+'">'+Beautify(Math.round(M.getCost(me)))+'</span>'])+'<br><small>('+loc("%1 to plant multiple.",loc("Shift-click"))+')</small>'+
+							
+							(Game.hasMMilestone("Farm",5)?'<br><small>('+"Ctrl-click to plant in every open tile."+')</small>':'')+
+							
+							(EN?'<br><small>(Holding the shift key pressed will also hide tooltips.)</small>':''):'')+
 								(M.plotBoost[y][x][0]!=1?'<br><small>'+loc("Aging multiplier:")+' '+Beautify(M.plotBoost[y][x][0]*100)+'%</small>':'')+
 								(M.plotBoost[y][x][1]!=1?'<br><small>'+loc("Effect multiplier:")+' '+Beautify(M.plotBoost[y][x][1]*100)+'%</small>':'')+
 								(M.plotBoost[y][x][2]!=1?'<br><small>'+loc("Weeds/fungus repellent:")+' '+Beautify(100-M.plotBoost[y][x][2]*100)+'%</small>':'')+
@@ -1226,6 +1231,7 @@ M.launch=function()
 					else if (tile[1]>=me.mature*0.333) stage=2;
 					else stage=1;
 					var dragonBoost=1/(1+0.05*Game.auraMult('Supreme Intellect'));
+					var mile14Boost=(Game.Cookivenience&&Game.hasMMilestone("Farm",14)?1/(1.05):1);
 					var icon=[stage,me.icon];
 					var str='<div style="padding:8px 4px;min-width:350px;">'+
 						'<div class="icon" style="background:url('+Game.resPath+'img/gardenPlants.png?v='+Game.version+');float:left;margin-left:-8px;margin-top:-8px;background-position:'+(-icon[0]*48)+'px '+(-icon[1]*48)+'px;"></div>'+
@@ -1243,10 +1249,10 @@ M.launch=function()
 							'<small>'+(stage==1?loc("Plant effects:")+' 10%':stage==2?loc("Plant effects:")+' 25%':stage==3?loc("Plant effects:")+' 50%':loc("Plant effects:")+' 100%; '+loc("may reproduce, will drop seed when harvested"))+'</small>'+
 							'<br><small>'+(
 								stage<4?(
-									loc("Mature in about %1",Game.sayTime(((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)))*((me.mature-tile[1])/100)*dragonBoost*M.stepT)*30,-1))+' ('+loc("%1 tick",LBeautify(Math.ceil((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)/dragonBoost))*((me.mature-tile[1])/100))))+')'
+									loc("Mature in about %1",Game.sayTime(((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)))*((me.mature-tile[1])/100)*dragonBoost*mile14Boost*M.stepT)*30,-1))+' ('+loc("%1 tick",LBeautify(Math.ceil((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)/(dragonBoost*mile14Boost)))*((me.mature-tile[1])/100))))+')'
 								):(
 									!me.immortal?(
-										loc("Decays in about %1",Game.sayTime(((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)))*((100-tile[1])/100)*dragonBoost*M.stepT)*30,-1))+' ('+loc("%1 tick",LBeautify(Math.ceil((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)/dragonBoost))*((100-tile[1])/100))))+')'
+										loc("Decays in about %1",Game.sayTime(((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)))*((100-tile[1])/100)*dragonBoost*mile14Boost*M.stepT)*30,-1))+' ('+loc("%1 tick",LBeautify(Math.ceil((100/(M.plotBoost[y][x][0]*(me.ageTick+me.ageTickR/2)/(dragonBoost*mile14Boost)))*((100-tile[1])/100))))+')'
 									):
 										loc("Does not decay")
 								)
@@ -1349,7 +1355,8 @@ M.launch=function()
 				AddEvent(l('gardenSoil-'+me.id),'click',function(me){return function(){
 					if (M.freeze || M.soil==me.id || M.nextSoil>Date.now() || M.parent.amount<me.req){return false;}
 					PlaySound('snd/toneTick.mp3');
-					M.nextSoil=Date.now()+(Game.Has('Turbo-charged soil')?1:(1000*60*10));
+					let minuteDelay = (Game.Cookivenience&&Game.hasMMilestone("Farm",11)?1:(Game.Cookivenience&&Game.hasMMilestone("Farm",7)?5:10))
+					M.nextSoil=Date.now()+(Game.Has('Turbo-charged soil')?1:(1000*60*minuteDelay));
 					M.toCompute=true;M.soil=me.id;M.computeStepT();
 					for (var i in M.soils){var it=M.soils[i];if (it.id==M.soil){l('gardenSoil-'+it.id).classList.add('on');}else{l('gardenSoil-'+it.id).classList.remove('on');}}
 				}}(me));
@@ -1426,6 +1433,21 @@ M.launch=function()
 			//if (M.freeze) return false;
 			var outcome=M.useTool(M.seedSelected,x,y);
 			M.toCompute=true;
+			if (outcome && Game.keys[17])//ctrl
+			{
+				if (Game.hasMMilestone("Farm",5)) {
+					// if you have milestone 5 you can plant in every open tile by holding ctrl
+					for (var i=0;i<6;i++) {
+						for (var j=0;j<6;j++) {
+							if(M.isTileUnlocked(j,i) && (M.plot[i][j])[0]==0) {
+								console.log(M.plot[i][j]);
+								M.useTool(M.seedSelected,j,i)
+							}
+						}
+					}
+					
+				}
+			}
 			if (outcome && !Game.keys[16])//shift
 			{
 				M.seedSelected=-1;
@@ -1439,13 +1461,15 @@ M.launch=function()
 			//PlaySound('snd/tick.mp3');
 		}
 		
-		M.useTool=function(what,x,y)
+		M.useTool=function(what,x,y,auto=false)
 		{
 			var harvested=M.harvest(x,y,1);
 			if (harvested)
 			{
-				Game.SparkleAt(Game.mouseX,Game.mouseY);
-				PlaySound('snd/harvest'+choose(['1','2','3'])+'.mp3',1,0.2);
+				if(!auto) {
+					Game.SparkleAt(Game.mouseX,Game.mouseY);
+					PlaySound('snd/harvest'+choose(['1','2','3'])+'.mp3',1,0.2);
+				}
 			}
 			else
 			{
@@ -1454,8 +1478,10 @@ M.launch=function()
 					M.plot[y][x]=[what+1,0];
 					M.toRebuild=true;
 					Game.Spend(M.getCost(M.plantsById[what]));
-					Game.SparkleAt(Game.mouseX,Game.mouseY);
-					PlaySound('snd/tillb'+choose(['1','2','3'])+'.mp3',1,0.2);
+					if(!auto) {
+						Game.SparkleAt(Game.mouseX,Game.mouseY);
+						PlaySound('snd/tillb'+choose(['1','2','3'])+'.mp3',1,0.2);
+					}
 					return true;
 				}
 			}
@@ -1864,10 +1890,11 @@ M.launch=function()
 				var weedMult=M.soilsById[M.soil].weedMult;
 				
 				var dragonBoost=1+0.05*Game.auraMult('Supreme Intellect');
+				var mile14Boost=(Game.Cookivenience&&Game.hasMMilestone("Farm",14)?1/(1.05):1);
 				
 				var loops=1;
 				if (M.soilsById[M.soil].key=='woodchips') loops=3;
-				loops=randomFloor(loops*dragonBoost);
+				loops=randomFloor(loops*dragonBoost*mile14Boost);
 				loops*=M.loopsMult;
 				M.loopsMult=1;
 			
@@ -1882,8 +1909,13 @@ M.launch=function()
 							if (tile[0]>0)
 							{
 								//age
-								tile[1]+=randomFloor((me.ageTick+me.ageTickR*Math.random())*M.plotBoost[y][x][0]*dragonBoost);
+								tile[1]+=randomFloor((me.ageTick+me.ageTickR*Math.random())*M.plotBoost[y][x][0]*dragonBoost*mile14Boost);
 								tile[1]=Math.max(tile[1],0);
+								// garden milestone 13 (auto unlock seeds from mature plants)
+								if(Game.Cookivenience&&Game.hasMMilestone("Farm",13)) {
+									if (tile[1]>=me.mature) // plant is mature
+									if (M.unlockSeed(me)) Game.Popup('('+me.name+')<br>'+"Unlocked "+me.name+" seed due to garden milestone 13!",Game.mouseX,Game.mouseY);
+								}
 								if (me.immortal) tile[1]=Math.min(me.mature+1,tile[1]);
 								else if (tile[1]>=100)
 								{
