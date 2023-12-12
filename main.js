@@ -1243,7 +1243,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.5 BETA"
+Game.modVersion="0.5 BETA" // "0.6"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -17783,7 +17783,7 @@ Game.DoGardenAutomator = function() {
 		{
 			if(!M.isTileUnlocked(x,y)) continue
 			
-			var presetPlant = M.plantsById[gardenPreset[y][x]]
+			var presetPlant = (Game.hasMMilestone("Farm",10)?M.plantsById[gardenPreset[y][x]]:undefined)
 			
 			let plotData = M.plot[y][x]
 			
