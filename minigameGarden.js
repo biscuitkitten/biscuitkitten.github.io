@@ -461,7 +461,7 @@ M.launch=function()
 				ageTickR:18,
 				mature:80,
 				children:[],
-				effsStr:'<div class="green">&bull; '+loc("cookies/click")+' +4%</div><div class="green">&bull; '+loc("%1 CpS",Game.Objects['Cursor'].single)+' +1%</div><div class="red">&bull; '+loc("CpS")+' -1%</div>',
+				effsStr:'<div class="green">&bull; '+loc("cookies/click")+' +4%</div><div class="green">&bull; '+"autoclick switch power"+' +1%</div><div class="green">&bull; '+loc("%1 CpS",Game.Objects['Cursor'].single)+' +1%</div><div class="red">&bull; '+loc("CpS")+' -1%</div>',
 				q:'Touching its waxy skin reveals that the interior is hollow and uncomfortably squishy.',
 			},
 			'cheapcap':{
@@ -784,6 +784,7 @@ M.launch=function()
 			var effs={
 				cps:1,
 				click:1,
+				autoclickPower:1,
 				cursorCps:1,
 				grandmaCps:1,
 				goldenCookieGain:1,
@@ -859,7 +860,7 @@ M.launch=function()
 							else if (name=='keenmoss') {effs.itemDrops+=0.03*mult;}
 							else if (name=='queenbeet') {effs.goldenCookieEffDur+=0.003*mult;effs.cps*=1-0.02*mult;}
 							else if (name=='queenbeetLump') {effs.cps*=1-0.1*mult;}
-							else if (name=='glovemorel') {effs.click+=0.04*mult;effs.cursorCps+=0.01*mult;effs.cps*=1-0.01*mult;}
+							else if (name=='glovemorel') {effs.click+=0.04*mult;effs.cursorCps+=0.01*mult;effs.autoclickPower+=0.01*mult;effs.cps*=1-0.01*mult;}
 							else if (name=='cheapcap') {effs.upgradeCost*=1-0.002*mult;effs.buildingCost*=1-0.002*mult;}
 							else if (name=='foolBolete') {effs.goldenCookieFreq+=0.02*mult;effs.goldenCookieGain*=1-0.05*mult;effs.goldenCookieDur*=1-0.02*mult;effs.goldenCookieEffDur*=1-0.02*mult;}
 							else if (name=='wrinklegill') {effs.wrinklerSpawn+=0.02*mult;effs.wrinklerEat+=0.01*mult;}
@@ -943,6 +944,7 @@ M.launch=function()
 						var effs={
 							cps:{n:'CpS'},
 							click:{n:'cookies/click'},
+							autoclickPower:{n:'autoclick switch power'},
 							cursorCps:{n:'cursor CpS'},
 							grandmaCps:{n:'grandma CpS'},
 							goldenCookieGain:{n:'golden cookie gains'},

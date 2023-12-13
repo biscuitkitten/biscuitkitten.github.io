@@ -1243,7 +1243,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.5.2" // "0.6"
+Game.modVersion="0.5.3"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -2898,7 +2898,7 @@ Game.Launch=function()
 			let mAuto3 = Game.MinigameAutomator["Pantheon"].Autoload
 			let mAuto4 = Game.MinigameAutomator["Grimoire"].Autocast
 			let ArrayString = function(arr) { return String(arr).replaceAll(",","&&&") }
-			str+= (type==3?'\n	auto garden : ':'')+(String(mAuto1a.on)+','+ArrayString(mAuto1a.keepfill)+','+String(mAuto1a.harvestYoung)+','+String(mAuto1a.harvestMature)+','+String(mAuto1a.harvestDying)+','+String(mAuto1a.harvestImmortals)+','+String(mAuto1a.cleanGarden)+','+String(mAuto1a.checkCpsMult)+','+String(mAuto1a.miniCpsMult)+','+String(mAuto1a.checkCpsMultDying)+','+String(mAuto1a.miniCpsMultDying)+','+String(mAuto1b.on)+','+ArrayString(mAuto1b.keepfill)+','+String(mAuto1b.seedtype)+','+ArrayString(mAuto1b.presets)+','+String(mAuto1b.selPreset)+','+String(mAuto1b.checkCpsMult)+','+String(mAuto1b.maxiCpsMult)+','+String(mAuto1c.on)+','+ArrayString(mAuto1c.keepfill)+','+String(mAuto1d.on))+';'
+			str+= (type==3?'\n	auto garden : ':'')+(String(mAuto1a.on)+','+ArrayString(mAuto1a.keepfill)+','+String(mAuto1a.harvestYoung)+','+String(mAuto1a.harvestMature)+','+String(mAuto1a.harvestDying)+','+String(mAuto1a.harvestImmortals)+','+String(mAuto1a.cleanGarden)+','+String(mAuto1a.checkCpsMult)+','+String(mAuto1a.miniCpsMult)+','+String(mAuto1a.checkCpsMultDying)+','+String(mAuto1a.miniCpsMultDying)+','+String(mAuto1b.on)+','+ArrayString(mAuto1b.keepfill)+','+String(mAuto1b.seedtype)+','+ArrayString(mAuto1b.presets)+','+String(mAuto1b.selPreset)+','+String(mAuto1b.checkCpsMult)+','+String(mAuto1b.maxiCpsMult)+','+String(mAuto1c.on)+','+ArrayString(mAuto1c.keepfill)+','+String(mAuto1d.on)+','+String(mAuto1b.avoidBuffPlant))+';'
 			str+= (type==3?'\n	auto stock market : ':'')+(String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing))+';'
 			str+= (type==3?'\n	auto pantheon : ':'')+(String(mAuto3.on)+','+ArrayString(mAuto3.presetsSave())+','+ArrayString(mAuto3.presetTimes)+','+String(mAuto3.selPreset))+';'
 			str+= (type==3?'\n	auto grimoire : ':'')+(String(mAuto4.on)+','+String(mAuto4.spell)+','+String(mAuto4.mode)+','+String(mAuto4.castDIFirst)+','+String(mAuto4.avoidBackfire)+','+String(mAuto4.dualcast))+';'
@@ -3438,6 +3438,10 @@ Game.Launch=function()
 							lAuto.Autoweeder.keepfill = parseStrList(splitStr[19],"bool")
 							lAuto.Autosacrifice.on = (splitStr[20] == "true")
 							Game.prefs["sacrificeAuto"] = (splitStr[20] == "true")
+							if(!(typeof splitStr[21] === 'undefined')) {
+								lAuto.Autoplanter.avoidBuffPlant = (splitStr[21] == "true")
+								Game.prefs["plantNotInBuff"] = (splitStr[21] == "true")
+							}
 
 						}
 						if(spl[14]) { // stock market (NYI)
@@ -5478,8 +5482,7 @@ Game.Launch=function()
 				
 				Game.computedAutoCps *= 1+(Game.Objects["Cursor"].level/100)
 				
-				
-				
+				Game.computedAutoCps *= Game.eff('autoclickPower');
 				
 				if (Game.computedAutoCps < 10 && Game.Has('Sick clicks')) Game.computedAutoCps = 10
 				
@@ -7247,6 +7250,7 @@ Game.Launch=function()
 					(pledgeStr!=''?'<div class="listing"><b>'+loc("Pledge:")+'</b> '+loc("%1 remaining",pledgeStr)+'</div>':'')+
 					(Game.wrinklersPopped>0?'<div class="listing"><b>'+loc("Wrinklers popped:")+'</b> '+Beautify(Game.wrinklersPopped)+'</div>':'')+
 					((Game.canLumps() && Game.lumpsTotal>-1)?'<div class="listing"><b>'+loc("Sugar lumps harvested:")+'</b> <div class="price lump plain">'+Beautify(Game.lumpsTotal)+'</div></div>':'')+
+					((Game.heraldAscensionBoost() > 0)?'<div class="listing"><b>'+loc("Boost from heralds:")+'</b> '+Beautify(100+Game.heraldAscensionBoost())+'%</div>':'')+
 					//(Game.cookiesSucked>0?'<div class="listing warning"><b>Withered :</b> '+Beautify(Game.cookiesSucked)+' cookies</div>':'')+
 					(Game.reindeerClicked>0?'<div class="listing"><b>'+loc("Reindeer found:")+'</b> '+Beautify(Game.reindeerClicked)+'</div>':'')+
 					(santaStr!=''?'<div class="listing"><b>'+loc("Santa stages unlocked:")+'</b></div><div>'+santaStr+'</div>':'')+
@@ -7349,53 +7353,55 @@ Game.Launch=function()
 			// update display of presets
 			if (Game.onMenu=='prefs') {
 				
-				let presetAmt = Game.MinigameAutomator["Pantheon"].Autoload.getPresetAmt()
-				if(presetAmt) {
-					for(var j=0;j<presetAmt;j++) {	
-						for(var k=0;k<3;k++) {
-							let targObj = l("loadAutoSlot("+j+","+k+")")
+				if(Game.Objects["Temple"].minigame) {
+					let presetAmt = Game.MinigameAutomator["Pantheon"].Autoload.getPresetAmt()
+					if(presetAmt) {
+						for(var j=0;j<presetAmt;j++) {	
+							for(var k=0;k<3;k++) {
+								let targObj = l("loadAutoSlot("+j+","+k+")")
+								if(targObj) {
+									for(var godId=0;godId<Game.Objects["Temple"].minigame.godsById.length;godId++) {
+										if (Game.Objects["Temple"].minigame.godsById[godId].name.toLowerCase() == Game.MinigameAutomator["Pantheon"].Autoload.presets[3*j+k]) {
+											targObj.selectedIndex = godId+1
+										}
+									}
+								}
+							}					
+						}
+					}
+				}
+				
+				if(Game.Objects["Farm"].minigame) {
+					var level=Game.Objects["Farm"].level;
+					level=Math.max(1,Math.min(Game.Objects["Farm"].minigame.plotLimits.length,level))-1;
+					var limits=Game.Objects["Farm"].minigame.plotLimits[level];		
+					let presetOffset = 6*6*(Game.MinigameAutomator.Garden.Autoplanter.selPreset-1)
+				
+					for (var y=limits[1];y<limits[3];y++)
+					{
+						for (var x=limits[0];x<limits[2];x++)
+						{
+							let targObj = l('autoplantPreset('+x+','+y+')')
 							if(targObj) {
-								for(var godId=0;godId<Game.Objects["Temple"].minigame.godsById.length;godId++) {
-									if (Game.Objects["Temple"].minigame.godsById[godId].name.toLowerCase() == Game.MinigameAutomator["Pantheon"].Autoload.presets[3*j+k]) {
-										targObj.selectedIndex = godId+1
+								for(var plantId=0;plantId<Game.Objects["Farm"].minigame.plantsById.length;plantId++) {
+									if (plantId == Game.MinigameAutomator["Garden"].Autoplanter.presets[presetOffset+6*y+x]) {
+										let plantName = Game.Objects["Farm"].minigame.plantsById[plantId].name.toLowerCase()
+										var targIndex = 0
+										for(var op=0; op<targObj.options.length; op++) {
+											if(plantName == targObj.options[op].value) {
+												targIndex = op
+											}
+										}
+										targObj.selectedIndex = targIndex
 									}
 								}
 							}
 						}					
 					}
+					
+					let targObj = l("autoplantSelPreset")
+					if(targObj) targObj.selectedIndex = Game.MinigameAutomator.Garden.Autoplanter.selPreset-1
 				}
-				
-	
-				var level=Game.Objects["Farm"].level;
-				level=Math.max(1,Math.min(Game.Objects["Farm"].minigame.plotLimits.length,level))-1;
-				var limits=Game.Objects["Farm"].minigame.plotLimits[level];		
-				let presetOffset = 6*6*(Game.MinigameAutomator.Garden.Autoplanter.selPreset-1)
-			
-				for (var y=limits[1];y<limits[3];y++)
-				{
-					for (var x=limits[0];x<limits[2];x++)
-					{
-						let targObj = l('autoplantPreset('+x+','+y+')')
-						if(targObj) {
-							for(var plantId=0;plantId<Game.Objects["Farm"].minigame.plantsById.length;plantId++) {
-								if (plantId == Game.MinigameAutomator["Garden"].Autoplanter.presets[presetOffset+6*y+x]) {
-									let plantName = Game.Objects["Farm"].minigame.plantsById[plantId].name.toLowerCase()
-									var targIndex = 0
-									for(var op=0; op<targObj.options.length; op++) {
-										if(plantName == targObj.options[op].value) {
-											targIndex = op
-										}
-									}
-									targObj.selectedIndex = targIndex
-								}
-							}
-						}
-					}					
-				}
-				
-				let targObj = l("autoplantSelPreset")
-				if(targObj) targObj.selectedIndex = Game.MinigameAutomator.Garden.Autoplanter.selPreset-1
-				
 			}
 			
 		}
@@ -12901,9 +12907,11 @@ Game.Launch=function()
 		new Game.Upgrade('Overclocked Goldenclick',"The golden cookie autoclicker clicks <b>2x more often</b> during a cookie chain, and <b>4x more often</b> during a cookie storm."+'<q>Turns out that the golden cookie clicker is powered by golden cookies, so if there\'s enough around, it can click even faster!</q>',77777777777,[25,6]);Game.last.pool='prestige';Game.last.parents=['Golden cookie clicker'];
 		new Game.Upgrade('Bulky Building Buyer',"Unlocks <b>Buy 10</b> mode for building autobuyers. (NYI)"+'<q>Buying this boost will beef up your building buyers, but beware of botching the buyers and blowing through your bank.</q>',10**15,[5,6]);Game.last.pool='prestige';Game.last.parents=['Starter kitchen'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 40 && Game.AutomationUnlocked());};
 		new Game.Upgrade('Building Buyer Beefiest Bulk',"Unlocks <b>Buy 100</b> mode for building autobuyers. (NYI)"+'<q>BEEF!<br>FOR!<br>TWO!<br>BEEF STEW!</q>',10**18,[33,12]);Game.last.pool='prestige';Game.last.parents=['Bulky Building Buyer'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 100 && Game.AutomationUnlocked());};
-		new Game.Upgrade('Good fortune',"Doubles the O Fortuna carry-over rate. <b>(40% -> 80%)</b>"+'<q>Every day is your lucky day.</q>',777777777777777,[29,8]);Game.last.pool='prestige';Game.last.parents=['Fortune cookies'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 100 && Game.AutomationUnlocked());};Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev("O Fortuna"));};
+		new Game.Upgrade('Good fortune',"Doubles the O Fortuna carry-over rate. <b>(40% -> 80%)</b>"+'<q>Every day is your lucky day.</q>',777777777777777,[29,8]);Game.last.pool='prestige';Game.last.parents=['Fortune cookies']; Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev("O Fortuna"));};
 		new Game.Upgrade('Autoclick refinement',"Slightly reduce the softcap to autoclick switch clicks per second above 10."+'<q>The problem with the autoclick switch is that it overheats when it tries to click too fast. There\'s only so much you can do about that, but this should help.</q>',2*10**15,[30,6]);Game.last.pool='prestige';Game.last.parents=['Sick clicks'];	
 		new Game.Upgrade('Companion clicker',"Unlock the ability to buy an <b>autoclicker for festive and dragon levels</b>. (costs 10 sugar lumps) (NYI)"+'<q>Upgrade a companion and you upgrade for a day. Teach a companion to upgrade itself and you upgrade for a lifetime.</q>',2599259925992599,[31,15]);Game.last.pool='prestige';Game.last.parents=['Pet the dragon'];
+		new Game.Upgrade('Automated pledge system',"Unlock the ability to buy an <b>autobuyer for Elder Pledge</b>. (costs 8 sugar lumps) (NYI)"+'<q>Now we all know those grandmas are no good with all this newfangled technology... Hopefully they can figure this out.</q>',28888888888888888,[0,0]);Game.last.pool='prestige';Game.last.parents=['Milkhelp&reg; lactose intolerance relief tablets'];	Game.last.showIf=function(){return (Game.Objects.Grandma.level >= 10);};
+		new Game.Upgrade('Golden Switch DX',"You <b>always have Frenzy active when the golden switch is on,</b> provided you have no golden/wrath cookie buffs active. (NYI)"+'<q>I don\'t have something funny to say about this one, it\'s just really really good.</q>',777777777777777777,[0,0]);Game.last.pool='prestige';Game.last.parents=['Glittering edge'];Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev('Black cat\'s paw'));};
 
 		
 		Game.seasons={
@@ -13127,6 +13135,8 @@ Game.Launch=function()
 		Game.UpgradePositions[907] = [-470,705]
 		Game.UpgradePositions[908] = [-1030,-721]
 		Game.UpgradePositions[909] = [-209,169]
+		Game.UpgradePositions[910] = [489,-404] // temp
+		Game.UpgradePositions[911] = [-488,809] // temp
 		
 		for (var i in Game.UpgradePositions) {Game.UpgradesById[i].posX=Game.UpgradePositions[i][0];Game.UpgradesById[i].posY=Game.UpgradePositions[i][1];}
 		
@@ -17555,7 +17565,7 @@ Game.MinigameAutomBuilds = function() {
 			var seedOptions = '<option value="none">None</option>'
 			for(var j=0;j<M.plantsById.length;j++) {
 				plant = M.plantsById[j]
-				if(plant.unlocked) {
+				if(plant.unlocked || Game.HasAchiev('Seedless to nay')) { // once you have sacrificed, stop withholding seeds
 					let sName = plant.name
 					let sel = (Game.MinigameAutomator["Garden"].Autoplanter.seedtype==j?" selected":"")
 					seedOptions += '<option value="'+sName.toLowerCase()+'" '+sel+'>'+sName+'</option>'
@@ -17595,7 +17605,7 @@ Game.MinigameAutomBuilds = function() {
 
 			if(Game.hasMMilestone("Farm",12)) {
 				ret += '<label>Autoplanter options:</label>'+
-				Game.WritePrefButton('plantCheckCps','plantCheckCpsButton','Check CpS mult<br>ON','Check CpS mult<br>OFF',"Game.UpdateMinigameAuto('plantCheckCps');")+'<label>Maxi CpS multiplier:</label><input type="number" id="plantAutoCheckCps" name="plantAutoCheckCps" size="8" step="any" min="1" max="10" onchange="Game.updAutoCpsMult(3)" value="'+Game.MinigameAutomator["Garden"].Autoplanter.maxiCpsMult+'"/><br>'
+				Game.WritePrefButton('plantCheckCps','plantCheckCpsButton','Check CpS mult<br>ON','Check CpS mult<br>OFF',"Game.UpdateMinigameAuto('plantCheckCps');")+'<label>Maxi CpS multiplier:</label><input type="number" id="plantAutoCheckCps" name="plantAutoCheckCps" size="8" step="any" min="1" max="10" onchange="Game.updAutoCpsMult(3)" value="'+Game.MinigameAutomator["Garden"].Autoplanter.maxiCpsMult+'"/>&nbsp'+Game.WritePrefButton('plantNotInBuff','plantNotInBuffButton','Don\'t plant seeds when CpS buffed<br>ON','Don\'t plant seeds when CpS buffed<br>OFF',"Game.UpdateMinigameAuto('plantNotInBuff');")+'<br>'
 			}
 
 			if(!Game.hasMMilestone("Farm",10)) {
@@ -17849,8 +17859,16 @@ Game.DoGardenAutomator = function() {
 				}				
 			}
 			
+			var mult = 1
+			if(autoplant.avoidBuffPlant) {
+				for (var i in Game.buffs)
+				{
+					if (typeof Game.buffs[i].multCpS!=='undefined') mult*=Game.buffs[i].multCpS;
+				}
+			}
+			
 			// autoplant
-			if(empty && Game.hasMMilestone("Farm",7) && autoplant.on) {
+			if(empty && Game.hasMMilestone("Farm",7) && autoplant.on && mult <= 1) {
 				if (Game.hasMMilestone("Farm",10) && presetPlant) {
 					if(!(Game.hasMMilestone("Farm",12) && autoplant.checkCpsMult && currCps <= autoplant.maxiCpsMult)) {
 						//console.log("plant "+presetPlant.name+" at "+x+", "+y)
@@ -17862,7 +17880,9 @@ Game.DoGardenAutomator = function() {
 					if (autoplant.keepfill[6*y+x] && autoplant.seedtype != -1) {
 						let seedplant = M.plantsById[autoplant.seedtype]
 						//console.log("plant "+seedplant.name+" in plot "+x+", "+y)
-						M.useTool(seedplant.id,x,y,true)
+						if(seedplant.unlocked) { // can't plant a seed you don't have
+							M.useTool(seedplant.id,x,y,true)
+						}
 					}					
 				}				
 			}
@@ -18331,6 +18351,9 @@ Game.UpdateMinigameAuto = function(type) {
 	else if(type == "plantCheckCps") {
 		mAuto["Garden"].Autoplanter.checkCpsMult = !mAuto["Garden"].Autoplanter.checkCpsMult
 	}
+	else if(type == "plantNotInBuff") {
+		mAuto["Garden"].Autoplanter.avoidBuffPlant = !mAuto["Garden"].Autoplanter.avoidBuffPlant
+	}
 	else if(type == "castAutoMode") {
 		mAuto["Grimoire"].Autocast.mode = !mAuto["Grimoire"].Autocast.mode
 	}
@@ -18663,6 +18686,7 @@ Game.unlockWAI = function() {
 
 
 Game.heraldAscensionBoost = function() { // In BISCUITCLICKER, heralds boost production by (resets)% instead of 41% or patrons% or whatever it is
+	if (!Game.Has('Heralds') || Game.ascensionMode==1) return 0
 	return Math.min(Game.resets,100)//+Math.min(Math.max((Game.resets-100)/10,0),100)
 }
 
@@ -18727,17 +18751,17 @@ Game.setupShortMilestoneText = function(){
 	Game.GardenMilestonesText[15] = "unlocks Autosacrifice"
 
 	Game.StockMarketMilestonesText = {};
-	Game.StockMarketMilestonesText[5] = "idk"
-	Game.StockMarketMilestonesText[6] = "please"
-	Game.StockMarketMilestonesText[7] = "help"
-	Game.StockMarketMilestonesText[8] = "me"
-	Game.StockMarketMilestonesText[9] = "the"
-	Game.StockMarketMilestonesText[10] = "stock"
-	Game.StockMarketMilestonesText[11] = "market"
-	Game.StockMarketMilestonesText[12] = "is"
-	Game.StockMarketMilestonesText[13] = "way"
-	Game.StockMarketMilestonesText[14] = "too"
-	Game.StockMarketMilestonesText[15] = "complicated"
+	Game.StockMarketMilestonesText[5] = "unlocks an autobuyer for stockbrokers"
+	Game.StockMarketMilestonesText[6] = "unlocks stock buy/sell auto for up to 3 stocks"
+	Game.StockMarketMilestonesText[7] = "unlocks display of resting value for each good"
+	Game.StockMarketMilestonesText[8] = "allows buy/sell auto for 3 more stocks"
+	Game.StockMarketMilestonesText[9] = Game.Cookivenience?"unlocks an autobuyer for offices and gives +50 storage space for each good":"unlocks an autobuyer for offices"
+	Game.StockMarketMilestonesText[10] = "allows buy/sell auto for another 3 more stocks"
+	Game.StockMarketMilestonesText[11] = Game.Cookivenience?"increases stock market tickspeed by 10% + another 10% during Business Day":""
+	Game.StockMarketMilestonesText[12] = "allows buy/sell auto for 4 more stocks"
+	Game.StockMarketMilestonesText[13] = Game.Cookivenience?"reduces the overhead cost by a bonus 20%":""
+	Game.StockMarketMilestonesText[14] = "allows buy/sell auto for the final 5 stocks"
+	Game.StockMarketMilestonesText[15] = Game.Cookivenience?"makes the positive effect of loans last 50% longer":""
 
 	Game.PantheonMilestonesText = {};
 	Game.PantheonMilestonesText[5] = Game.Cookivenience?"increases worship swap refill by 10% per missing swap":""
@@ -18844,17 +18868,17 @@ Game.getMMDesc = function(mBuilding,i,req=true) {
 		if (i > 15) return ""
 	}
 	if (mBuilding == "Bank") {
-		if (i == 5) return "idk"
-		if (i == 6) return "please"
-		if (i == 7) return "help"
-		if (i == 8) return "me"
-		if (i == 9) return "the"
-		if (i == 10) return "stock"
-		if (i == 11) return "market"
-		if (i == 12) return "is"
-		if (i == 13) return "way"
-		if (i == 14) return "too"
-		if (i == 15) return "complicated"
+		if (i == 5) return "Unlocks an autobuyer for stockbrokers"
+		if (i == 6) return "Unlocks buy/sell automation for 3 stocks (each individual stock lets you set a sell minimum and buy maximum)"
+		if (i == 7) return "You can view the resting value for each good, as well as the ratio of current stock value to resting value in percentage form"
+		if (i == 8) return "Unlocks buy/sell automation for 3 more stocks"
+		if (i == 9) return Game.Cookivenience?"Unlocks an autobuyer for offices and you can store bonus +50 stock of each good":"Unlocks an autobuyer for offices"
+		if (i == 10) return "Unlocks buy/sell automation for another 3 more stocks"
+		if (i == 11) return Game.Cookivenience?"The stock market ticks 10% faster, and another 10% faster on top of that during Business Day":""
+		if (i == 12) return "Unlocks buy/sell automation for 4 more stocks"
+		if (i == 13) return Game.Cookivenience?"The overhead cost when buying is reduced by a bonus 20%":""
+		if (i == 14) return "Unlocks buy/sell automation for the final 5 stocks"
+		if (i == 15) return Game.Cookivenience?"Increases the duration of the positive effect of loans by 50%":""
 		if (i > 15) return ""
 	}
 	if (mBuilding == "Temple") {
@@ -18914,6 +18938,7 @@ Game.ResetMinigameAutomators = function() {
 	Game.MinigameAutomator["Garden"].Autoplanter.presets = Array(6*6*3).fill(-1)
 	Game.MinigameAutomator["Garden"].Autoplanter.selPreset = 1
 	Game.MinigameAutomator["Garden"].Autoplanter.checkCpsMult = false
+	Game.MinigameAutomator["Garden"].Autoplanter.avoidBuffPlant = false
 	Game.MinigameAutomator["Garden"].Autoplanter.maxiCpsMult = 1
 	Game.MinigameAutomator["Garden"].Autoweeder = {}
 	Game.MinigameAutomator["Garden"].Autoweeder.on = false
