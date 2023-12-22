@@ -1243,7 +1243,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.6 BETA"
+Game.modVersion="0.6.1"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -17976,7 +17976,7 @@ Game.DoStockMarketAutomator = function() {
 		if(autostock.on && Game.hasMMilestone("Bank",6)) {
 			for(var i=0;i<autostock.getAutoLimit();i++) {
 				let good = autostock.stockType[i]
-				if(good == -1 || !M.goodsById[good].active) continue
+				if(good == -1 || (M.goodsById[good] && !M.goodsById[good].active)) continue
 				let buy = autostock.stockMaxBuy[i]
 				let sell = autostock.stockMinSell[i]
 				let goodPrice = M.goodsById[good].val
