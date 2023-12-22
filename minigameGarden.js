@@ -1442,7 +1442,6 @@ M.launch=function()
 					for (var i=0;i<6;i++) {
 						for (var j=0;j<6;j++) {
 							if(M.isTileUnlocked(j,i) && (M.plot[i][j])[0]==0) {
-								console.log(M.plot[i][j]);
 								M.useTool(M.seedSelected,j,i)
 							}
 						}

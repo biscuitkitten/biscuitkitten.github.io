@@ -931,7 +931,7 @@ var PlaySound=function(url,vol,pitchVar)
 			sound.playbackRate=rate;
 		}
 		try{
-			sound.play();
+			sound.play().catch(error => {});
 		}
 		catch(e){
 			console.log(1)
@@ -1243,7 +1243,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.5.3"
+Game.modVersion="0.6 BETA"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -2064,7 +2064,8 @@ Game.Launch=function()
 		Game.reindeerAutoDelayLevel=0;
 		Game.wrinklerAutoDelayLevel=0;
 		
-		Game.autoBuildBulk=false
+		Game.autoBuildBulk10=false
+		Game.autoBuildBulk100=false
 		
 		Game.autoUpgr={};
 		Game.autoUpgr.unlocked=false;
@@ -2881,7 +2882,7 @@ Game.Launch=function()
 			str+= (type==3?'\n	upgrade automator speed levels : ':'')+parseInt(Game.upgradeAutoDelayLevel).toString()+';'
 			str+= (type==3?'\n	cookies currently invested into building production : ':'')+parseInt(Game.soldCookies).toString()+';'
 			str+= (type==3?'\n	cookivenience mode : ':'')+(Game.Cookivenience).toString()+';'
-			str+= (type==3?'\n	auto upgrader : ':'')+(String(Game.autoUpgr.unlocked)+','+String(Game.autoUpgr.on)+','+String(Game.autoUpgr.mode)+','+String(Game.autoUpgr.buyTech)+','+parseFloat(Game.autoUpgr.threshA)+','+parseFloat(Game.autoUpgr.threshB)+','+String(Game.autoUpgr.bulkBuy)+','+parseInt(Game.autoUpgr.bulkAmt)+','+String(Game.autoBuildBulk))+';'
+			str+= (type==3?'\n	auto upgrader : ':'')+(String(Game.autoUpgr.unlocked)+','+String(Game.autoUpgr.on)+','+String(Game.autoUpgr.mode)+','+String(Game.autoUpgr.buyTech)+','+parseFloat(Game.autoUpgr.threshA)+','+parseFloat(Game.autoUpgr.threshB)+','+String(Game.autoUpgr.bulkBuy)+','+parseInt(Game.autoUpgr.bulkAmt)+','+String(Game.autoBuildBulk10))+','+String(Game.autoBuildBulk100)+';'
 			str+= (type==3?'\n	sugary spire timer : ':'')+parseInt(Game.sugarySpireTimer).toString()+';'
 			str+= (type==3?'\n	golden automator speed levels : ':'')+parseInt(Game.goldenAutoDelayLevel).toString()+';'
 			str+= (type==3?'\n	reindeer automator speed levels : ':'')+parseInt(Game.reindeerAutoDelayLevel).toString()+';'
@@ -2889,18 +2890,19 @@ Game.Launch=function()
 			str+= (type==3?'\n	auto reindeer : ':'')+(String(Game.autoReindeer.unlocked)+','+String(Game.autoReindeer.on))+';'
 			str+= (type==3?'\n	auto wrinkler : ':'')+(String(Game.autoWrinkler.unlocked)+','+String(Game.autoWrinkler.on)+','+parseFloat(Game.autoWrinkler.thresh))+';'
 			str+= (type==3?'\n	auto companion : ':'')+(String(Game.autoCompanion.unlocked)+','+String(Game.autoCompanion.upgradeFestive)+','+String(Game.autoCompanion.upgradeDragon)+','+String(Game.autoCompanion.dragonPreset1)+','+String(Game.autoCompanion.dragonPreset2))+';'
-			let thing = -1
 			let mAuto1a = Game.MinigameAutomator["Garden"].Autoharvester
 			let mAuto1b = Game.MinigameAutomator["Garden"].Autoplanter
 			let mAuto1c = Game.MinigameAutomator["Garden"].Autoweeder
 			let mAuto1d = Game.MinigameAutomator["Garden"].Autosacrifice
-			let mAuto2 = Game.MinigameAutomator["Stock Market"]
+			let mAuto2a = Game.MinigameAutomator["Stock Market"].Autobroker
+			let mAuto2b = Game.MinigameAutomator["Stock Market"].Autooffice
+			let mAuto2c = Game.MinigameAutomator["Stock Market"].Autostock
 			let mAuto3 = Game.MinigameAutomator["Pantheon"].Autoload
 			let mAuto4 = Game.MinigameAutomator["Grimoire"].Autocast
 			let ArrayString = function(arr) { return String(arr).replaceAll(",","&&&") }
 			str+= (type==3?'\n	auto garden : ':'')+(String(mAuto1a.on)+','+ArrayString(mAuto1a.keepfill)+','+String(mAuto1a.harvestYoung)+','+String(mAuto1a.harvestMature)+','+String(mAuto1a.harvestDying)+','+String(mAuto1a.harvestImmortals)+','+String(mAuto1a.cleanGarden)+','+String(mAuto1a.checkCpsMult)+','+String(mAuto1a.miniCpsMult)+','+String(mAuto1a.checkCpsMultDying)+','+String(mAuto1a.miniCpsMultDying)+','+String(mAuto1b.on)+','+ArrayString(mAuto1b.keepfill)+','+String(mAuto1b.seedtype)+','+ArrayString(mAuto1b.presets)+','+String(mAuto1b.selPreset)+','+String(mAuto1b.checkCpsMult)+','+String(mAuto1b.maxiCpsMult)+','+String(mAuto1c.on)+','+ArrayString(mAuto1c.keepfill)+','+String(mAuto1d.on)+','+String(mAuto1b.avoidBuffPlant))+';'
-			str+= (type==3?'\n	auto stock market : ':'')+(String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing)+','+String(thing))+';'
-			str+= (type==3?'\n	auto pantheon : ':'')+(String(mAuto3.on)+','+ArrayString(mAuto3.presetsSave())+','+ArrayString(mAuto3.presetTimes)+','+String(mAuto3.selPreset))+';'
+			str+= (type==3?'\n	auto stock market : ':'')+(String(mAuto2a.on)+','+String(mAuto2b.on)+','+String(mAuto2c.on)+','+ArrayString(mAuto2c.stockType)+','+ArrayString(mAuto2c.stockMinSell)+','+ArrayString(mAuto2c.stockMaxBuy))+';'
+			str+= (type==3?'\n	auto pantheon : ':'')+(String(mAuto3.on)+','+ArrayString(mAuto3.presets)+','+ArrayString(mAuto3.presetTimes)+','+String(mAuto3.selPreset))+';'
 			str+= (type==3?'\n	auto grimoire : ':'')+(String(mAuto4.on)+','+String(mAuto4.spell)+','+String(mAuto4.mode)+','+String(mAuto4.castDIFirst)+','+String(mAuto4.avoidBackfire)+','+String(mAuto4.dualcast))+';'
 			
 			Game.lastSaveData=str;
@@ -3348,8 +3350,10 @@ Game.Launch=function()
 							Game.prefs["upgAutoBulk"] = (splitStr[6] == "true")
 							Game.autoUpgr.bulkAmt = parseInt(splitStr[7])
 							// not quite related but oh well
-							Game.autoBuildBulk = (splitStr[8] == "true")
-							Game.prefs["autoBuildBulk"] = (splitStr[8] == "true")
+							Game.autoBuildBulk10 = (splitStr[8] == "true")
+							Game.prefs["buildBulk10Auto"] = (splitStr[8] == "true")
+							Game.autoBuildBulk100 = (splitStr[9] == "true")
+							Game.prefs["buildBulk100Auto"] = (splitStr[9] == "true")
 						}
 						if(spl[6])
 							Game.sugarySpireTimer=parseInt(spl[6]);
@@ -3398,6 +3402,9 @@ Game.Launch=function()
 								if(type == "int") {
 									ret[i] = parseInt(ret[i])										
 								}
+								if(type == "float") {
+									ret[i] = parseFloat(ret[i])										
+								}
 							}
 							return ret
 						}
@@ -3444,16 +3451,26 @@ Game.Launch=function()
 							}
 
 						}
-						if(spl[14]) { // stock market (NYI)
+						if(spl[14]) { // stock market
 							let splitStr = spl[14].split(",")
-							//console.log(splitStr)
+							let lAuto = Game.MinigameAutomator["Stock Market"]
+							lAuto.Autobroker.on = (splitStr[0] == "true")
+							Game.prefs["brokerAuto"] = (splitStr[0] == "true")							
+							lAuto.Autooffice.on = (splitStr[1] == "true")
+							Game.prefs["officeAuto"] = (splitStr[1] == "true")							
+							lAuto.Autostock.on = (splitStr[2] == "true")
+							Game.prefs["stockAuto"] = (splitStr[2] == "true")							
+							lAuto.Autostock.stockType = parseStrList(splitStr[3],"int")
+							lAuto.Autostock.stockMinSell = parseStrList(splitStr[4],"float")
+							lAuto.Autostock.stockMaxBuy = parseStrList(splitStr[5],"float")
+
 						}
 						if(spl[15]) { // pantheon
 							let splitStr = spl[15].split(",")
 							let lAuto = Game.MinigameAutomator["Pantheon"]
 							lAuto.Autoload.on = (splitStr[0] == "true")
 							Game.prefs["loadAuto"] = (splitStr[0] == "true")
-							lAuto.Autoload.presets = parseStrList(splitStr[1],"str")
+							lAuto.Autoload.presets = parseStrList(splitStr[1],"int")
 							lAuto.Autoload.presetTimes = parseStrList(splitStr[2],"str")
 							lAuto.Autoload.selPreset = parseInt(splitStr[3])
 						}
@@ -3462,7 +3479,7 @@ Game.Launch=function()
 							let lAuto = Game.MinigameAutomator["Grimoire"]
 							lAuto.Autocast.on = (splitStr[0] == "true")
 							Game.prefs["castAuto"] = (splitStr[0] == "true")
-							lAuto.Autocast.spell = splitStr[1]
+							lAuto.Autocast.spell = parseInt(splitStr[1])
 							lAuto.Autocast.mode = (splitStr[2] == "true")
 							Game.prefs["castAutoMode"] = (splitStr[2] == "true")
 							lAuto.Autocast.castDIFirst = (splitStr[3] == "true")
@@ -4711,7 +4728,7 @@ Game.Launch=function()
 				
 				// Sugary spire
 				
-				if (Game.Has('Sugary spire') && Game.Cookivenience) {
+				if (Game.Has('Sugary spire') && Game.Cookivenience && Game.ascensionMode!=1) {
 					if (Game.Has('Sweet dreams') && time > 60*60*8) {
 						time = Math.floor(time*1.5)
 					}
@@ -5768,7 +5785,7 @@ Game.Launch=function()
 						//if (Game.hasAura('Dragonflight')) list.push('dragonflight');
 						if (Math.random()<Game.auraMult('Dragonflight')) list.push('dragonflight');
 					}
-					
+
 					if (this.last!='' && Math.random()<0.8 && list.indexOf(this.last)!=-1) list.splice(list.indexOf(this.last),1);//80% chance to force a different one
 					if (Math.random()<0.0001) list.push('blab');
 					var choice=choose(list);
@@ -5801,7 +5818,8 @@ Game.Launch=function()
 						else if (godLvl==3) effectDurMod*=1.02;
 					}
 
-					effectDurMod /= Game.cheaterBoost; // unfortunately, cheater boost divides duration of golden cookie effects
+					if (choice != 'cookie storm')
+						effectDurMod /= Game.cheaterBoost; // unfortunately, cheater boost divides duration of golden cookie effects
 					
 					//effect multiplier (from lucky etc)
 					var mult=1;
@@ -7361,12 +7379,28 @@ Game.Launch=function()
 								let targObj = l("loadAutoSlot("+j+","+k+")")
 								if(targObj) {
 									for(var godId=0;godId<Game.Objects["Temple"].minigame.godsById.length;godId++) {
-										if (Game.Objects["Temple"].minigame.godsById[godId].name.toLowerCase() == Game.MinigameAutomator["Pantheon"].Autoload.presets[3*j+k]) {
+										if (godId == Game.MinigameAutomator["Pantheon"].Autoload.presets[3*j+k]) {
 											targObj.selectedIndex = godId+1
 										}
 									}
 								}
 							}					
+						}
+					}
+				}
+
+				if(Game.Objects["Bank"].minigame) {
+					let autoLimit = Game.MinigameAutomator["Stock Market"].Autostock.getAutoLimit()
+					if(autoLimit) {
+						for(var j=0;j<autoLimit;j++) {	
+							let targObj = l("selGood"+j)
+							if(targObj) {
+								for(var goodId=0;goodId<Game.Objects["Bank"].minigame.goodsById.length;goodId++) {
+									if (goodId == Game.MinigameAutomator["Stock Market"].Autostock.stockType[j]) {
+										targObj.selectedIndex = goodId+1
+									}
+								}
+							}
 						}
 					}
 				}
@@ -7402,8 +7436,7 @@ Game.Launch=function()
 					let targObj = l("autoplantSelPreset")
 					if(targObj) targObj.selectedIndex = Game.MinigameAutomator.Garden.Autoplanter.selPreset-1
 				}
-			}
-			
+			}		
 		}
 		
 		AddEvent(l('prefsButton'),'click',function(){Game.ShowMenu('prefs');});
@@ -8679,6 +8712,14 @@ Game.Launch=function()
 					l('productDragonBoost'+me.id).style.display='block';
 				}
 				else l('productDragonBoost'+me.id).style.display='none';
+				
+				// BISCUITCLICKER
+				for (var ind=0;ind<18;ind++) {
+					if(l("bankMM7"+ind)) {
+						l('bankMM7'+ind).style.display=(Game.hasMMilestone("Bank",7)?"":"none")
+					}
+				}
+				
 			}
 			this.muted=false;
 			this.mute=function(val)
@@ -9281,7 +9322,7 @@ Game.Launch=function()
 			}
 		};
 		Game.last.iconFunc=function(type){
-			var grandmaIcons=[[0,1],[0,2],[1,2],[2,2]];
+			var grandmaIcons=[[0,1],[0,2],[1,2],[2,2],[3,21]];
 			if (type=='off') return [0,1];
 			if (Game.prefs.notScary && Game.elderWrath>0) return [3,2];
 			return grandmaIcons[Game.elderWrath];
@@ -12904,14 +12945,14 @@ Game.Launch=function()
 		new Game.Upgrade('Keepsakes III',"Increase the effect of Keepsakes to a <b>1/2 chance</b>."+'<q>We\'ll never forget.</q>',1111111111111111,[22,29]);Game.last.pool='prestige';Game.last.parents=['Keepsakes II'];Game.last.showIf=function(){return (Game.Cookivenience);};		
 		new Game.Upgrade('Fortnight sugar pass',"Immediately gain a one-time bonus of 14 sugar lumps."+'<q>That kind of looks like the sugar pass.</q>',1.4*10**14,[29,27]);Game.last.pool='prestige';Game.last.parents=['Sugary spire'];Game.last.showIf=function(){return (Game.Cookivenience);};
 		new Game.Upgrade('Wrinkleclicker',"Unlock the ability to buy a <b>wrinkler autoclicker</b>. (costs 4 sugar lumps)"+'<q>This nifty device removes wrinklers for you!<br>(Note: It does not remove wrinkles.)</q>',666666666,[19,8]);Game.last.pool='prestige';Game.last.parents=['Eye of the wrinkler'];Game.last.showIf=function(){return (Game.HasAchiev("Moistburster"));};
-		new Game.Upgrade('Overclocked Goldenclick',"The golden cookie autoclicker clicks <b>2x more often</b> during a cookie chain, and <b>4x more often</b> during a cookie storm."+'<q>Turns out that the golden cookie clicker is powered by golden cookies, so if there\'s enough around, it can click even faster!</q>',77777777777,[25,6]);Game.last.pool='prestige';Game.last.parents=['Golden cookie clicker'];
-		new Game.Upgrade('Bulky Building Buyer',"Unlocks <b>Buy 10</b> mode for building autobuyers. (NYI)"+'<q>Buying this boost will beef up your building buyers, but beware of botching the buyers and blowing through your bank.</q>',10**15,[5,6]);Game.last.pool='prestige';Game.last.parents=['Starter kitchen'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 40 && Game.AutomationUnlocked());};
-		new Game.Upgrade('Building Buyer Beefiest Bulk',"Unlocks <b>Buy 100</b> mode for building autobuyers. (NYI)"+'<q>BEEF!<br>FOR!<br>TWO!<br>BEEF STEW!</q>',10**18,[33,12]);Game.last.pool='prestige';Game.last.parents=['Bulky Building Buyer'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 100 && Game.AutomationUnlocked());};
+		new Game.Upgrade('Overclocked Goldenclick',"The golden cookie autoclicker clicks <b>2x more often</b> during a cookie chain, and <b>7x more often</b> during a cookie storm."+'<q>Turns out that the golden cookie clicker is powered by golden cookies, so if there\'s enough around, it can click even faster!</q>',77777777777,[25,6]);Game.last.pool='prestige';Game.last.parents=['Golden cookie clicker'];
+		new Game.Upgrade('Bulky Building Buyer',"Unlocks <b>Buy 10</b> mode for building autobuyers."+'<q>Buying this boost will beef up your building buyers, but beware of botching the buyers and blowing through your bank.</q>',10**15,[5,6]);Game.last.pool='prestige';Game.last.parents=['Starter kitchen'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 40 && Game.AutomationUnlocked());};
+		new Game.Upgrade('Building Buyer Beefiest Bulk',"Unlocks <b>Buy 100</b> mode for building autobuyers."+'<q>BEEF!<br>FOR!<br>TWO!<br>BEEF STEW!</q>',10**18,[33,12]);Game.last.pool='prestige';Game.last.parents=['Bulky Building Buyer'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 100 && Game.AutomationUnlocked());};
 		new Game.Upgrade('Good fortune',"Doubles the O Fortuna carry-over rate. <b>(40% -> 80%)</b>"+'<q>Every day is your lucky day.</q>',777777777777777,[29,8]);Game.last.pool='prestige';Game.last.parents=['Fortune cookies']; Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev("O Fortuna"));};
 		new Game.Upgrade('Autoclick refinement',"Slightly reduce the softcap to autoclick switch clicks per second above 10."+'<q>The problem with the autoclick switch is that it overheats when it tries to click too fast. There\'s only so much you can do about that, but this should help.</q>',2*10**15,[30,6]);Game.last.pool='prestige';Game.last.parents=['Sick clicks'];	
 		new Game.Upgrade('Companion clicker',"Unlock the ability to buy an <b>autoclicker for festive and dragon levels</b>. (costs 10 sugar lumps) (NYI)"+'<q>Upgrade a companion and you upgrade for a day. Teach a companion to upgrade itself and you upgrade for a lifetime.</q>',2599259925992599,[31,15]);Game.last.pool='prestige';Game.last.parents=['Pet the dragon'];
-		new Game.Upgrade('Automated pledge system',"Unlock the ability to buy an <b>autobuyer for Elder Pledge</b>. (costs 8 sugar lumps) (NYI)"+'<q>Now we all know those grandmas are no good with all this newfangled technology... Hopefully they can figure this out.</q>',28888888888888888,[0,0]);Game.last.pool='prestige';Game.last.parents=['Milkhelp&reg; lactose intolerance relief tablets'];	Game.last.showIf=function(){return (Game.Objects.Grandma.level >= 10);};
-		new Game.Upgrade('Golden Switch DX',"You <b>always have Frenzy active when the golden switch is on,</b> provided you have no golden/wrath cookie buffs active. (NYI)"+'<q>I don\'t have something funny to say about this one, it\'s just really really good.</q>',777777777777777777,[0,0]);Game.last.pool='prestige';Game.last.parents=['Glittering edge'];Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev('Black cat\'s paw'));};
+		new Game.Upgrade('Automated pledge system',"Unlock the ability to buy an <b>autobuyer for Elder Pledge</b>. (costs 8 sugar lumps) (NYI)"+'<q>Now we all know those grandmas are no good with all this newfangled technology... Hopefully they can figure this out.</q>',28888888888888888,[11,9]);Game.last.pool='prestige';Game.last.parents=['Milkhelp&reg; lactose intolerance relief tablets'];	Game.last.showIf=function(){return (Game.Objects.Grandma.level >= 10);};
+		new Game.Upgrade('Golden Switch DX',"You <b>always have Frenzy active when the golden switch is on,</b> provided you have no golden/wrath cookie buffs active. (NYI)"+'<q>I don\'t have something funny to say about this one, it\'s just really really good.</q>',777777777777777777,[36,2]);Game.last.pool='prestige';Game.last.parents=['Glittering edge'];Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev('Black cat\'s paw'));};
 
 		
 		Game.seasons={
@@ -13124,7 +13165,7 @@ Game.Launch=function()
 		Game.UpgradePositions[896] = [270,684]
 		Game.UpgradePositions[897] = [400,60]		
 		Game.UpgradePositions[898] = [480,360]		
-		Game.UpgradePositions[899] = [425,538]		
+		Game.UpgradePositions[899] = [410,523]		
 		Game.UpgradePositions[900] = [-900,-427]		
 		Game.UpgradePositions[901] = [-1022,-300]		
 		Game.UpgradePositions[902] = [-466,-1600]		
@@ -13135,8 +13176,8 @@ Game.Launch=function()
 		Game.UpgradePositions[907] = [-470,705]
 		Game.UpgradePositions[908] = [-1030,-721]
 		Game.UpgradePositions[909] = [-209,169]
-		Game.UpgradePositions[910] = [489,-404] // temp
-		Game.UpgradePositions[911] = [-488,809] // temp
+		Game.UpgradePositions[910] = [479,-467]
+		Game.UpgradePositions[911] = [-658,669]
 		
 		for (var i in Game.UpgradePositions) {Game.UpgradesById[i].posX=Game.UpgradePositions[i][0];Game.UpgradesById[i].posY=Game.UpgradePositions[i][1];}
 		
@@ -17228,7 +17269,7 @@ Game.Launch=function()
 		
 		
 		// BISCUITCLICKER LOGIC
-		if (!Game.OnAscend) {
+		if (!Game.OnAscend && Game.ascensionMode!=1) {
 			if (Game.T%(Math.ceil(Game.fps*Game.BADelay()))==0 && Game.T > Game.fps) Game.DoBuildingAutobuyers();
 			if (Game.T%(Math.ceil(Game.fps*Game.UADelay()))==0 && Game.T > Game.fps) Game.DoUpgradeAutobuyer();
 			if (Game.T%(Math.ceil(Game.fps*Game.GADelay()))==0 && Game.T > Game.fps) Game.DoGoldenAutobuyer();
@@ -17236,7 +17277,7 @@ Game.Launch=function()
 			if (Game.T%(Math.ceil(Game.fps*Game.WADelay()))==0 && Game.T > Game.fps) Game.DoWrinklerAutobuyer();
 			if (Game.T%(Math.ceil(Game.fps*Game.MADelay()))==0 && Game.T > Game.fps) Game.DoMinigameAutomators();
 		}
-		if (Game.T%(Game.fps)==0 && Game.Has('Sugary spire') && Game.Cookivenience && !Game.OnAscend) {
+		if (Game.T%(Game.fps)==0 && Game.Has('Sugary spire') && Game.Cookivenience && !Game.OnAscend && Game.ascensionMode!=1) {
 			Game.sugarySpireTimer += 1 * Game.cheaterBoost
 			if (Game.sugarySpireTimer > 24*60*60) {
 				var lGain = 0
@@ -17499,7 +17540,7 @@ Game.totalBuildingLevels = function() {
 	return ret
 }
 Game.AutomationUnlocked = function() {
-	return Game.Objects[objNames[0]].level >= 4 ||
+	return Game.ascensionMode!=1 && (Game.Objects[objNames[0]].level >= 4 ||
 		Game.Objects[objNames[1]].level >= 4 ||
 		Game.Objects[objNames[2]].level >= 4 ||
 		Game.Objects[objNames[3]].level >= 4 ||
@@ -17519,7 +17560,7 @@ Game.AutomationUnlocked = function() {
 		Game.Objects[objNames[17]].level >= 4 ||
 		Game.Objects[objNames[18]].level >= 4 ||
 		Game.Objects[objNames[19]].level >= 4 ||
-		false
+		false)
 }
 Game.BuildingsAutomated = function() {
 	ret = ''
@@ -17552,7 +17593,7 @@ Game.MinigameAutomBuilds = function() {
 	
 	for (let i = 0; i < Game.minigameNames.length; i++) {
 		if(Game.minigameNames[i] == "Garden" && !Game.hasMMilestone("Farm",6)) continue;
-		if(Game.minigameNames[i] == "Stock Market" && !Game.hasMMilestone("Bank",69)) continue;
+		if(Game.minigameNames[i] == "Stock Market" && !Game.hasMMilestone("Bank",5)) continue;
 		if(Game.minigameNames[i] == "Pantheon" && !Game.hasMMilestone("Temple",6)) continue;
 		if(Game.minigameNames[i] == "Grimoire" && !Game.hasMMilestone("Wizard tower",7)) continue;
 		
@@ -17672,15 +17713,43 @@ Game.MinigameAutomBuilds = function() {
 			ret = ret + '</div><br>'
 		}
 		else if(Game.Objects["Bank"].minigame && Game.minigameNames[i] == "Stock Market") {
-			//ret += Game.WritePrefButton('temp2','temp2b','Autobuy '+2+' ON','Autobuy '+2+' OFF',"console.log(2);")+'</div><br>'
-			ret += "NYI</div><br>"
+			var M=Game.Objects["Bank"].minigame
+			
+			var goodOptions = '<option value="-1">None</option>'
+			for(var j=0;j<M.goodsById.length;j++) {
+				good = M.goodsById[j]
+				if(good.active) {
+					goodOptions += '<option value="'+j+'">'+((good.name!="%1")?good.name:"You")+'</option>'
+				}				
+			}			
+				
+			ret += (Game.hasMMilestone("Bank",6)?Game.WritePrefButton('stockAuto','stockAutoButton','Autostock ON','Autostock OFF',"Game.FlipMinigameAuto('autostock');"):"")+
+			Game.WritePrefButton('brokerAuto','brokerAutoButton','Autobuy brokers ON','Autobuy brokers OFF',"Game.FlipMinigameAuto('autobroker');")+
+			(Game.hasMMilestone("Bank",9)?Game.WritePrefButton('officeAuto','officeAutoButton','Autobuy offices ON','Autobuy offices OFF',"Game.FlipMinigameAuto('autooffice');"):"")+
+			'<br>'
+			
+			if(Game.hasMMilestone("Bank",6)) {
+				for(var j=0;j<Game.MinigameAutomator["Stock Market"].Autostock.getAutoLimit();j++) {
+					ret += '<label>- Stock Automator '+(j+1)+':</label>&nbsp'
+					ret += '<label> Selected good: </label>' +
+					'<select name="selGood'+j+'" id="selGood'+j+'" onchange="Game.updSelGood('+j+');">'+goodOptions+'</select>'
+					ret += '<label> Don\'t buy above: </label>'+
+					'<input type="number" id="autostockBuy'+j+'" name="autostockBuy'+j+'" size="8" step="any" min="0" max="10000" onchange="Game.updAutostockBuy('+j+')" value="'+Game.MinigameAutomator["Stock Market"].Autostock.stockMaxBuy[j]+'"/>'
+					ret += '<label> Don\'t sell below: </label>'+
+					'<input type="number" id="autostockSell'+j+'" name="autostockSell'+j+'" size="8" step="any" min="0" max="10000" onchange="Game.updAutostockSell('+j+')" value="'+Game.MinigameAutomator["Stock Market"].Autostock.stockMinSell[j]+'"/>'
+					ret += '<br>'
+				}
+			}
+			
+
+			ret = ret + '</div><br>'
 		}
 		else if(Game.Objects["Temple"].minigame && Game.minigameNames[i] == "Pantheon") {
 			var godOptions = '<option value="none">None</option>'
 			for(var j=0;j<Game.Objects["Temple"].minigame.godsById.length;j++) {
 				let gName = Game.Objects["Temple"].minigame.godsById[j].name
 				let sel = ""//(gName==Game.MinigameAutomator["Pantheon"].Autoload.presets[j]?" selected":"")				
-				godOptions += '<option value="'+gName.toLowerCase()+'"'+sel+'>'+gName+'</option>'
+				godOptions += '<option value="'+j+'"'+sel+'>'+gName+'</option>'
 			}
 
 			let presetAmt = Game.MinigameAutomator["Pantheon"].Autoload.getPresetAmt()
@@ -17713,11 +17782,11 @@ Game.MinigameAutomBuilds = function() {
 			ret += '</div><br>'
 		}
 		else if(Game.Objects["Wizard tower"].minigame && Game.minigameNames[i] == "Grimoire") {
-			var spellOptions = '<option value="none">None</option>'
+			var spellOptions = '<option value="-1">None</option>'
 			for(var j=0;j<Game.Objects["Wizard tower"].minigame.spellsById.length;j++) {
 				let sName = Game.Objects["Wizard tower"].minigame.spellsById[j].name
-				let sel = (Game.MinigameAutomator["Grimoire"].Autocast.spell==sName.toLowerCase()?" selected":"")				
-				spellOptions += '<option value="'+sName.toLowerCase()+'"'+sel+'>'+sName+'</option>'
+				let sel = (Game.MinigameAutomator["Grimoire"].Autocast.spell==j?" selected":"")				
+				spellOptions += '<option value="'+j+'"'+sel+'>'+sName+'</option>'
 				//console.log(sName)
 			}
 			ret = ret +
@@ -17872,7 +17941,9 @@ Game.DoGardenAutomator = function() {
 				if (Game.hasMMilestone("Farm",10) && presetPlant) {
 					if(!(Game.hasMMilestone("Farm",12) && autoplant.checkCpsMult && currCps <= autoplant.maxiCpsMult)) {
 						//console.log("plant "+presetPlant.name+" at "+x+", "+y)
-						M.useTool(presetPlant.id,x,y,true)
+						if(presetPlant.unlocked && presetPlant.plantable) { // can't plant a seed you don't have
+							M.useTool(presetPlant.id,x,y,true)
+						}
 					}
 				}
 				else {
@@ -17880,7 +17951,7 @@ Game.DoGardenAutomator = function() {
 					if (autoplant.keepfill[6*y+x] && autoplant.seedtype != -1) {
 						let seedplant = M.plantsById[autoplant.seedtype]
 						//console.log("plant "+seedplant.name+" in plot "+x+", "+y)
-						if(seedplant.unlocked) { // can't plant a seed you don't have
+						if(seedplant.unlocked && seedplant.plantable) { // can't plant a seed you don't have
 							M.useTool(seedplant.id,x,y,true)
 						}
 					}					
@@ -17890,22 +17961,45 @@ Game.DoGardenAutomator = function() {
 	}
 }
 Game.DoStockMarketAutomator = function() {
-	//let sa = Game.MinigameAutomator["Stock Market"]
-	/*if (sa.SomethingOrOther.on && Game.hasMMilestone("Bank",69)) {
-		// TODO NYI
-	}*/
+	let M = Game.Objects["Bank"].minigame	
+	let autobroker = Game.MinigameAutomator["Stock Market"].Autobroker
+	let autooffice = Game.MinigameAutomator["Stock Market"].Autooffice
+	let autostock = Game.MinigameAutomator["Stock Market"].Autostock
+	if (Game.hasMMilestone("Bank",5)) { // automation unlock at level 5
+		if(autobroker.on) {
+			if(l('bankBrokersBuy'))	l('bankBrokersBuy').click()
+		}
+		if(autooffice.on && Game.hasMMilestone("Bank",9)) {
+			if(l('bankOfficeUpgrade')) l('bankOfficeUpgrade').click()
+		}
+	
+		if(autostock.on && Game.hasMMilestone("Bank",6)) {
+			for(var i=0;i<autostock.getAutoLimit();i++) {
+				let good = autostock.stockType[i]
+				if(good == -1 || !M.goodsById[good].active) continue
+				let buy = autostock.stockMaxBuy[i]
+				let sell = autostock.stockMinSell[i]
+				let goodPrice = M.goodsById[good].val
+				if(goodPrice <= buy) 
+					M.buyGood(good,10000)
+				else if(goodPrice >= sell) 
+					M.sellGood(good,10000)
+			}
+		}
+	}	
 }
 Game.DoPantheonAutomator = function() {
 	let auto = Game.MinigameAutomator["Pantheon"].Autoload
 	if(auto.presets.length != 11*3) {
 		console.log("invalid autoload preset array length")
-		auto.presets = Array(11*3).fill("none");
+		auto.presets = Array(11*3).fill(-1);
 	}
 	if(!auto.on) return
 	if (Game.hasMMilestone("Temple",6)) { // automation unlock at level 6
 		let M = Game.Objects["Temple"].minigame
+		if(M.swaps < 1) return // no swaps to automate
 		var selectedPId = auto.selPreset
-		if(isNaN(selectedPId) || selectedPId < 0 || selectedPId >= auto.getPresetAmt()) return
+		if(isNaN(selectedPId) || selectedPId < 0 || selectedPId > auto.getPresetAmt()) return
 		
 		if(Game.hasMMilestone("Temple",11)) {// Time control
 			let currHour = new Date().getHours() // 0 (midnight) - 23 (11 PM)
@@ -17925,11 +18019,11 @@ Game.DoPantheonAutomator = function() {
 				}
 			}		
 		}
-		
+				
 		var selectedPreset = [auto.presets[3*selectedPId-3],auto.presets[3*selectedPId-2],auto.presets[3*selectedPId-1]]
 		if(!selectedPreset) return
 		
-		if((selectedPreset[0]!="none"&&selectedPreset[0]==selectedPreset[1]) || (selectedPreset[0]!="none"&&selectedPreset[0]==selectedPreset[2]) || (selectedPreset[1]!="none"&&selectedPreset[1]==selectedPreset[2])) return // duplicate gods
+		if((selectedPreset[0]!=-1&&selectedPreset[0]==selectedPreset[1]) || (selectedPreset[0]!=-1&&selectedPreset[0]==selectedPreset[2]) || (selectedPreset[1]!=-1&&selectedPreset[1]==selectedPreset[2])) return // duplicate gods
 		
 		var swapCost = 0
 		let currentBuild = M.slot 
@@ -17943,7 +18037,8 @@ Game.DoPantheonAutomator = function() {
 		if(swapCost == 0 || swapCost > M.swaps) return // no change or can't afford
 		
 		for(var i = 0; i < desiredBuild.length; i++) {
-			if (desiredBuild[i] == currentBuild[i]) continue // already the right god
+			if(isNaN(desiredBuild[i])) continue
+			if(desiredBuild[i] == currentBuild[i]) continue // already the right god
 			M.dragging = M.godsById[desiredBuild[i]]
 			M.slotHovered = i
 			M.dropGod()
@@ -17959,7 +18054,8 @@ Game.DoGrimoireAutomator = function() {
 	if(!auto.on) return
 	if (Game.hasMMilestone("Wizard tower",7)) { // automation unlock at level 7
 		let M = Game.Objects["Wizard tower"].minigame
-		let spellToAutocast = M.spells[auto.spell]
+		if(isNaN(auto.spell)) auto.spell = -1
+		let spellToAutocast = M.spellsById[auto.spell]
 		if(!spellToAutocast) return // can't cast a spell that doesn't exist (such as "none")
 		if(auto.avoidBackfire && 
 			Game.hasMMilestone("Wizard tower",11) && 
@@ -18004,11 +18100,14 @@ Game.AutomTextBuilds = function() {
 		ret = '<div class="subtitle" style="margin-top:16px">Building Automation</div><br>'+
 	
 		'<div class="listing"><label>Your current building autobuyer interval is '+Game.BADelay()+' seconds.</label>'+
-				
+						
 		'<a class="option smallFancyButton" '+Game.clickStr+'="Game.BuyBAIUpg();PlaySound(\'snd/tick.mp3\');">'+loc("Reduce this by 25%<br>for "+
 		Game.BAIUpgPrice()+" sugar lump"+(Game.BAIUpgPrice()!=1?"s":""))+
 		'</a>'+
-			
+		
+		(Game.Has('Bulky Building Buyer')?Game.WritePrefButton('buildBulk10Auto','buildBulk10AutoButton','Bulk 10x autobuy buildings ON','Bulk 10x autobuy buildings OFF',"Game.FlipAuto('buildingBulk10');"):"")+
+		(Game.Has('Building Buyer Beefiest Bulk')?Game.WritePrefButton('buildBulk100Auto','buildBulk100AutoButton','Bulk 100x autobuy buildings ON','Bulk 100x autobuy buildings OFF',"Game.FlipAuto('buildingBulk100');"):"")+
+		
 		'</div>'+ret
 		
 		
@@ -18191,6 +18290,12 @@ Game.FlipAuto = function(num) {
 	if (num == "upg") {
 		Game.autoUpgr.on = !Game.autoUpgr.on
 	}
+	else if (num == "buildingBulk10") {
+		Game.autoBuildBulk10 = !Game.autoBuildBulk10
+	}
+	else if (num == "buildingBulk100") {
+		Game.autoBuildBulk100 = !Game.autoBuildBulk100
+	}
 	else if (num == "golden") {
 		Game.autoGolden.clickGolden = !Game.autoGolden.clickGolden
 	}
@@ -18266,41 +18371,6 @@ Game.ChangeAutomThresh = function(num) {
 	}
 }
 
-Game.DisableMinigameAuto = function(type) {
-	//console.log("disable minigame auto: "+type)
-	let mAuto = Game.MinigameAutomator
-	if(type == "autoharvester") {
-		if(mAuto["Garden"].Autoharvester.on) {
-			
-		}
-	}
-	if(type == "autoplanter") {
-		if(mAuto["Garden"].Autoplanter.on) {
-			
-		}
-	}
-	if(type == "autoweeder") {
-		if(mAuto["Garden"].Autoweeder.on) {
-			
-		}
-	}
-	if(type == "autosacrifice") {
-		if(mAuto["Garden"].Autosacrifice.on) {
-			
-		}
-	}
-	if(type == "autoload") {
-		if(mAuto["Pantheon"].Autoload.on) {
-			
-		}
-	}
-	if(type == "autocast") {
-		if(mAuto["Grimoire"].Autocast.on) {
-			
-		}
-	}
-}
-
 Game.FlipMinigameAuto = function(type) {
 	//console.log("flip minigame auto: "+type)
 	let mAuto = Game.MinigameAutomator
@@ -18322,6 +18392,15 @@ Game.FlipMinigameAuto = function(type) {
 	if(type == "autocast") {
 		mAuto["Grimoire"].Autocast.on = !mAuto["Grimoire"].Autocast.on
 	}	
+	if(type == "autostock") {
+		mAuto["Stock Market"].Autostock.on = !mAuto["Stock Market"].Autostock.on
+	}
+	if(type == "autobroker") {
+		mAuto["Stock Market"].Autobroker.on = !mAuto["Stock Market"].Autobroker.on
+	}
+	if(type == "autooffice") {
+		mAuto["Stock Market"].Autooffice.on = !mAuto["Stock Market"].Autooffice.on
+	}
 }
 
 Game.UpdateMinigameAuto = function(type) {
@@ -18386,7 +18465,9 @@ Game.updAutoplantSeed = function() {
 	Game.MinigameAutomator["Garden"].Autoplanter.seedtype = plantId;
 }
 Game.updGodPreset = function(preset,slot) {
-	Game.MinigameAutomator["Pantheon"].Autoload.presets[3*preset+slot] = l('loadAutoSlot('+preset+','+slot+')').value;
+	var newId = l('loadAutoSlot('+preset+','+slot+')').value;
+	if(isNaN(newId)) newId = -1
+	Game.MinigameAutomator["Pantheon"].Autoload.presets[3*preset+slot] = newId
 }
 Game.updPresetTimes = function(preset) {
 	Game.MinigameAutomator["Pantheon"].Autoload.presetTimes[preset] = l('timeControl'+preset).value;
@@ -18395,7 +18476,7 @@ Game.updAutoloadPreset = function() {
 	Game.MinigameAutomator["Pantheon"].Autoload.selPreset = l("loadAutoSelect").value;
 }
 Game.updAutocastSpell = function() {
-	Game.MinigameAutomator["Grimoire"].Autocast.spell = l("castAutoSpell").value;
+	Game.MinigameAutomator["Grimoire"].Autocast.spell = parseInt(l("castAutoSpell").value);
 }
 Game.updAutoCpsMult = function(index) {
 	if(index == 1) {
@@ -18451,16 +18532,31 @@ Game.saveGardenToPreset = function() {
 	
 	Game.UpdateMenu()
 }
+Game.updSelGood = function(index) {
+	Game.MinigameAutomator["Stock Market"].Autostock.stockType[index] = parseInt(l("selGood"+index).value)
+}
+Game.updAutostockBuy = function(index) {
+	Game.MinigameAutomator["Stock Market"].Autostock.stockMaxBuy[index] = parseInt(l("autostockBuy"+index).value)
+}
+Game.updAutostockSell = function(index) {
+	Game.MinigameAutomator["Stock Market"].Autostock.stockMinSell[index] = parseInt(l("autostockSell"+index).value)
+}
+
 
 Game.DoBuildingAutobuyers = function() {
 	for (var i = 0; i < objNames.length; i++) {
 		let currOb = Game.Objects[objNames[i]]
 		let obAuto = currOb.auto
+				
+		var buyAmt = 1; // TODO add options for bulk buy 10/100
+		if(Game.Has('Bulky Building Buyer') && Game.autoBuildBulk10) buyAmt = 10
+		if(Game.Has('Building Buyer Beefiest Bulk') && Game.autoBuildBulk100) buyAmt = 100
+		let checkPrice = currOb.price * Game.priceIncrease**(buyAmt-1)
+
 		if(currOb.level >= 4 && obAuto.on) { // autobuyer is unlocked and enabled
-			if ((obAuto.mode && Game.cookies/obAuto.threshA > currOb.price) || (!obAuto.mode && Game.cookiesPsRaw*obAuto.threshB > currOb.price)) {
-				if(Game.cookies > currOb.price)	{
-					console.log("AUTOBUY: "+objNames[i])
-					var buyAmt = 1; // TODO add options for bulk buy 10/100
+			if ((obAuto.mode && Game.cookies/obAuto.threshA > checkPrice) || (!obAuto.mode && Game.cookiesPsRaw*obAuto.threshB > checkPrice)) {
+				if(Game.cookies > checkPrice)	{
+					//console.log("AUTOBUY: "+objNames[i])
 					Game.ObjectsById[i].buy(buyAmt,true);
 				}
 			}
@@ -18600,7 +18696,7 @@ Game.UADelay = function() {
 Game.GADelay = function() {
 	let gSpeedMult = ((Game.Has("Well-oiled machines")?2:1)*
 	((Game.Has("Overclocked Goldenclick") && Game.shimmerTypes.golden.chain)?2:1)*
-	((Game.Has("Overclocked Goldenclick") && Game.hasBuff('Cookie storm'))?4:1))
+	((Game.Has("Overclocked Goldenclick") && Game.buffs["Cookie storm"])?7:1))
 	return Math.max(Math.round(2000/gSpeedMult*0.75**Game.goldenAutoDelayLevel)/100,1/30);
 }
 Game.RADelay = function() {
@@ -18948,17 +19044,37 @@ Game.ResetMinigameAutomators = function() {
 	Game.MinigameAutomator["Garden"].Autoplanter.getPresetAmt = function(){
 		var presetAmt = 0
 		
-		if(Game.hasMMilestone("Garden",10)) presetAmt += 3
+		if(Game.hasMMilestone("Farm",10)) presetAmt += 3
 		
 		return presetAmt
 	};
 	
 	Game.MinigameAutomator["Stock Market"] = {}
+	Game.MinigameAutomator["Stock Market"].Autobroker = {}
+	Game.MinigameAutomator["Stock Market"].Autobroker.on = false
+	Game.MinigameAutomator["Stock Market"].Autooffice = {}
+	Game.MinigameAutomator["Stock Market"].Autooffice.on = false
+	Game.MinigameAutomator["Stock Market"].Autostock = {}
+	Game.MinigameAutomator["Stock Market"].Autostock.on = false
+	Game.MinigameAutomator["Stock Market"].Autostock.stockType = Array(18).fill(-1)
+	Game.MinigameAutomator["Stock Market"].Autostock.stockMinSell = Array(18).fill(20)
+	Game.MinigameAutomator["Stock Market"].Autostock.stockMaxBuy = Array(18).fill(10)
+	Game.MinigameAutomator["Stock Market"].Autostock.getAutoLimit = function(){
+		var autoLimit = 0
+		
+		if(Game.hasMMilestone("Bank",6)) autoLimit += 3
+		if(Game.hasMMilestone("Bank",8)) autoLimit += 3
+		if(Game.hasMMilestone("Bank",10)) autoLimit += 3
+		if(Game.hasMMilestone("Bank",12)) autoLimit += 4
+		if(Game.hasMMilestone("Bank",14)) autoLimit += 5
+		
+		return autoLimit
+	};
 	
 	Game.MinigameAutomator["Pantheon"] = {}
 	Game.MinigameAutomator["Pantheon"].Autoload = {};
 	Game.MinigameAutomator["Pantheon"].Autoload.on = false;
-	Game.MinigameAutomator["Pantheon"].Autoload.presets = Array(11*3).fill("none");
+	Game.MinigameAutomator["Pantheon"].Autoload.presets = Array(11*3).fill(-1);
 	Game.MinigameAutomator["Pantheon"].Autoload.presetTimes = Array(11).fill("");
 	Game.MinigameAutomator["Pantheon"].Autoload.selPreset = 0;
 	Game.MinigameAutomator["Pantheon"].Autoload.getPresetAmt = function(){
@@ -18972,18 +19088,11 @@ Game.ResetMinigameAutomators = function() {
 		
 		return presetAmt
 	};
-	Game.MinigameAutomator["Pantheon"].Autoload.presetsSave = function() {
-		var ret = []
-		for(var i=0; i<Game.MinigameAutomator["Pantheon"].Autoload.presets.length; i++) {
-			ret.push((Game.MinigameAutomator["Pantheon"].Autoload.presets[i]).replaceAll(',',"%%"))
-		}
-		return ret
-	};
 	
 	Game.MinigameAutomator["Grimoire"] = {}
 	Game.MinigameAutomator["Grimoire"].Autocast = {};
 	Game.MinigameAutomator["Grimoire"].Autocast.on = false;
-	Game.MinigameAutomator["Grimoire"].Autocast.spell = "none";
+	Game.MinigameAutomator["Grimoire"].Autocast.spell = -1;
 	Game.MinigameAutomator["Grimoire"].Autocast.mode = false;
 	Game.MinigameAutomator["Grimoire"].Autocast.castDIFirst = false;
 	Game.MinigameAutomator["Grimoire"].Autocast.avoidBackfire = false;
