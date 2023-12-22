@@ -17976,7 +17976,8 @@ Game.DoStockMarketAutomator = function() {
 		if(autostock.on && Game.hasMMilestone("Bank",6)) {
 			for(var i=0;i<autostock.getAutoLimit();i++) {
 				let good = autostock.stockType[i]
-				if(good == -1 || (M.goodsById[good] && !M.goodsById[good].active)) continue
+				if(!M.goodsById[good]) continue
+				if(good == -1 || !M.goodsById[good].active) continue
 				let buy = autostock.stockMaxBuy[i]
 				let sell = autostock.stockMinSell[i]
 				let goodPrice = M.goodsById[good].val
