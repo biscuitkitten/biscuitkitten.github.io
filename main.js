@@ -1243,7 +1243,7 @@ var Game={};
 })();
 
 Game.version=VERSION;
-Game.modVersion="0.6.1"
+Game.modVersion="1.0"
 Game.loadedFromVersion=VERSION;
 Game.beta=BETA;
 if (!App && window.location.href.indexOf('/beta')>-1) Game.beta=1;
@@ -2026,6 +2026,9 @@ Game.Launch=function()
 			return result;
 		}
 		
+		// BISCUITCLICKER
+		Game.BCInit();
+		
 		Game.cookiesEarned=0;//all cookies earned during gameplay
 		Game.cookies=0;//cookies
 		Game.cookiesd=0;//cookies display
@@ -2056,50 +2059,6 @@ Game.Launch=function()
 		Game.lumpsTotal=-1;//sugar lumps earned across all playthroughs (-1 means they haven't even started yet)
 		Game.lumpT=Date.now();//time when the current lump started forming
 		Game.lumpRefill=0;//time left before a sugar lump can be used again (on minigame refills etc) in logic frames
-		
-		// BISCUITCLICKER
-		Game.buildingAutoDelayLevel=0;
-		Game.upgradeAutoDelayLevel=0;
-		Game.goldenAutoDelayLevel=0;
-		Game.reindeerAutoDelayLevel=0;
-		Game.wrinklerAutoDelayLevel=0;
-		
-		Game.autoBuildBulk10=false
-		Game.autoBuildBulk100=false
-		
-		Game.autoUpgr={};
-		Game.autoUpgr.unlocked=false;
-		Game.autoUpgr.on = false
-		Game.autoUpgr.mode = false
-		Game.autoUpgr.buyTech = false
-		Game.autoUpgr.threshA = 1000
-		Game.autoUpgr.threshB = 10
-		Game.autoUpgr.bulkBuy = false
-		Game.autoUpgr.bulkAmt = 1
-		
-		Game.autoGolden={}
-		Game.autoGolden.unlocked=false;
-		Game.autoGolden.clickGolden = false
-		Game.autoGolden.clickWrath = false
-		
-		Game.autoReindeer={}
-		Game.autoReindeer.unlocked=false;
-		Game.autoReindeer.on = false		
-
-		Game.autoWrinkler={}
-		Game.autoWrinkler.unlocked=false;
-		Game.autoWrinkler.on = false	
-		Game.autoWrinkler.thresh = 3600;	
-
-		Game.autoCompanion={}
-		Game.autoCompanion.unlocked=false;
-		Game.autoCompanion.upgradeFestive=false;
-		Game.autoCompanion.upgradeDragon=false;
-		Game.autoCompanion.dragonPreset1="none";
-		Game.autoCompanion.dragonPreset2="none";
-		
-		Game.soldCookies=0; // goes up when you buy and goes down when you sell
-		Game.sugarySpireTimer=0;
 		
 		Game.makeSeed=function()
 		{
@@ -2889,7 +2848,7 @@ Game.Launch=function()
 			str+= (type==3?'\n	auto golden : ':'')+(String(Game.autoGolden.unlocked)+','+String(Game.autoGolden.clickGolden)+','+String(Game.autoGolden.clickWrath))+';'
 			str+= (type==3?'\n	auto reindeer : ':'')+(String(Game.autoReindeer.unlocked)+','+String(Game.autoReindeer.on))+';'
 			str+= (type==3?'\n	auto wrinkler : ':'')+(String(Game.autoWrinkler.unlocked)+','+String(Game.autoWrinkler.on)+','+parseFloat(Game.autoWrinkler.thresh))+';'
-			str+= (type==3?'\n	auto companion : ':'')+(String(Game.autoCompanion.unlocked)+','+String(Game.autoCompanion.upgradeFestive)+','+String(Game.autoCompanion.upgradeDragon)+','+String(Game.autoCompanion.dragonPreset1)+','+String(Game.autoCompanion.dragonPreset2))+';'
+			str+= (type==3?'\n	auto companion : ':'')+(String(Game.autoCompanion.unlocked)+','+String(Game.autoCompanion.upgradeFestive)+','+String(Game.autoCompanion.upgradeDragon)+','+parseInt(Game.autoCompanion.dragonPreset1).toString()+','+parseInt(Game.autoCompanion.dragonPreset2)).toString()+';'
 			let mAuto1a = Game.MinigameAutomator["Garden"].Autoharvester
 			let mAuto1b = Game.MinigameAutomator["Garden"].Autoplanter
 			let mAuto1c = Game.MinigameAutomator["Garden"].Autoweeder
@@ -2904,7 +2863,13 @@ Game.Launch=function()
 			str+= (type==3?'\n	auto stock market : ':'')+(String(mAuto2a.on)+','+String(mAuto2b.on)+','+String(mAuto2c.on)+','+ArrayString(mAuto2c.stockType)+','+ArrayString(mAuto2c.stockMinSell)+','+ArrayString(mAuto2c.stockMaxBuy))+';'
 			str+= (type==3?'\n	auto pantheon : ':'')+(String(mAuto3.on)+','+ArrayString(mAuto3.presets)+','+ArrayString(mAuto3.presetTimes)+','+String(mAuto3.selPreset))+';'
 			str+= (type==3?'\n	auto grimoire : ':'')+(String(mAuto4.on)+','+String(mAuto4.spell)+','+String(mAuto4.mode)+','+String(mAuto4.castDIFirst)+','+String(mAuto4.avoidBackfire)+','+String(mAuto4.dualcast))+';'
+			str+= (type==3?'\n	auto pledge : ':'')+(String(Game.autoPledge.unlocked)+','+String(Game.autoPledge.on))+';'
 			
+			str+= (type==3?'\n	this hour : ':'')+parseFloat(Math.floor(Game.thisHour)).toString()+';'
+			str+= (type==3?'\n	cookies this hour : ':'')+parseFloat(Math.floor(Game.cookiesThisHour)).toString()+';'
+			str+= (type==3?'\n	best cookies this hour : ':'')+parseFloat(Math.floor(Game.bestCookiesThisHour)).toString()+';'
+			str+= (type==3?'\n	dad mode unlocked : ':'')+(Game.dad).toString()+';'
+						
 			Game.lastSaveData=str;
 			
 			if (type==2 || type==3)
@@ -3386,11 +3351,13 @@ Game.Launch=function()
 							let splitStr = spl[12].split(",")
 							Game.autoCompanion.unlocked = (splitStr[0] == "true")
 							Game.autoCompanion.upgradeFestive = (splitStr[1] == "true")
-							Game.prefs["upgradeFestive"] = (splitStr[1] == "true")
+							Game.prefs["festiveAuto"] = (splitStr[1] == "true")
 							Game.autoCompanion.upgradeDragon = (splitStr[2] == "true")
-							Game.prefs["upgradeDragon"] = (splitStr[2] == "true")
-							Game.autoCompanion.dragonPreset1 = splitStr[3]
-							Game.autoCompanion.dragonPreset2 = splitStr[4]
+							Game.prefs["dragonAuto"] = (splitStr[2] == "true")
+							Game.autoCompanion.dragonPreset1 = parseInt(splitStr[3])
+							Game.autoCompanion.dragonPreset2 = parseInt(splitStr[4])
+							if (isNaN(Game.autoCompanion.dragonPreset1)) Game.autoCompanion.dragonPreset1 = -1
+							if (isNaN(Game.autoCompanion.dragonPreset2)) Game.autoCompanion.dragonPreset2 = -1
 						}
 						let parseStrList = function(str,type) {
 							var ret = str.split("&&&")
@@ -3489,7 +3456,25 @@ Game.Launch=function()
 							lAuto.Autocast.dualcast = (splitStr[5] == "true")
 							Game.prefs["castAutoDualcast"] = (splitStr[5] == "true")
 
-						}						
+						}
+						if(spl[17]) {
+							let splitStr = spl[17].split(",")
+							Game.autoPledge.unlocked = (splitStr[0] == "true")
+							Game.autoPledge.on = (splitStr[1] == "true")
+							Game.prefs["pledgeAuto"] = (splitStr[1] == "true")
+						}
+						if(spl[18]) {
+							Game.thisHour=parseFloat(spl[18]);
+						}
+						if(spl[19]) {
+							Game.cookiesThisHour=parseFloat(spl[19]);
+						}
+						if(spl[20]) {
+							Game.bestCookiesThisHour=parseFloat(spl[20]);
+						}
+						if(spl[21]) {
+							Game.dad=(spl[21]=="true");
+						}
 						for (var i in Game.ObjectsById)
 						{
 							var me=Game.ObjectsById[i];
@@ -3619,6 +3604,17 @@ Game.Launch=function()
 							offlineBoost = Math.round(offlineBoost*100)/100
 							amount *= offlineBoost
 							
+							if (Game.Has('Golden Switch DX') && Game.Has('Golden switch [on]')) {
+								amount *= 7 // consider frenzy boost toward offline gains
+							}
+							
+							if(Game.Observing()) {
+								let ps = Game.ObserverPs();
+								offlineBoost = 1;
+								percent = 100;
+								amount=(timeOfflineOptimal+timeOfflineReduced*0.1)*ps*(percent/100);
+							}
+							
 							if (amount>0)
 							{
 								Game.Notify(loc("Welcome back!"),(offlineBoost>1?"Offline production boost: "+((offlineBoost))+"x<br>":"")+loc("You earned <b>%1</b> while you were away.",loc("%1 cookie",LBeautify(amount)))+(EN?('<br>('+Game.sayTime(timeOfflineOptimal*Game.fps,-1)+' at '+Math.floor(percent)+'% CpS'+(timeOfflineReduced?', plus '+Game.sayTime(timeOfflineReduced*Game.fps,-1)+' at '+(Math.floor(percent*10)/100)+'%':'')+'.)'):''),[36,0]);
@@ -3636,6 +3632,7 @@ Game.Launch=function()
 						
 						
 						Game.loadLumps(timeOffline);
+						
 			
 						Game.bakeryNameRefresh();
 						
@@ -3801,6 +3798,10 @@ Game.Launch=function()
 			Game.soldCookies=0;
 			Game.sugarySpireTimer=0;
 			
+			Game.thisHour = Math.floor(Date.now()/(1000*3600))
+			Game.cookiesThisHour=0;
+			Game.bestCookiesThisHour=0;
+			
 			Game.TickerClicks=0;
 			
 			if (Game.gainedPrestige>0) Game.resets++;
@@ -3958,6 +3959,8 @@ Game.Launch=function()
 				Game.ResetMinigameAutomators()
 				Game.setupShortMilestoneText()
 				Game.cheaterBoost = 1
+				Game.BCInit()
+				Game.dad = false
 			}
 		}
 		
@@ -4716,6 +4719,7 @@ Game.Launch=function()
 				Game.lumpT=Math.min(Date.now(),Game.lumpT);
 				var age=Math.max(Date.now()-Game.lumpT,0);
 				var amount=Math.floor(age/Game.lumpOverripeAge);//how many lumps did we harvest since we closed the game?
+				if(Game.Observing()) amount=0
 				if (amount>=1)
 				{
 					Game.harvestLumps(1,true);
@@ -4728,7 +4732,7 @@ Game.Launch=function()
 				
 				// Sugary spire
 				
-				if (Game.Has('Sugary spire') && Game.Cookivenience && Game.ascensionMode!=1) {
+				if (Game.Has('Sugary spire') && Game.Cookivenience && Game.ascensionMode!=1 && !Game.Observing()) {
 					if (Game.Has('Sweet dreams') && time > 60*60*8) {
 						time = Math.floor(time*1.5)
 					}
@@ -4902,6 +4906,7 @@ Game.Launch=function()
 				Game.Notify(loc("Sugar lumps!"),loc("Because you've baked a <b>billion cookies</b> in total, you are now attracting <b>sugar lumps</b>. They coalesce quietly near the top of your screen, under the Stats button.<br>You will be able to harvest them when they're ripe, after which you may spend them on all sorts of things!"),[23,14]);
 			}
 			var age=Date.now()-Game.lumpT;
+			if(Game.Observing()) age=0
 			if (age>Game.lumpOverripeAge)
 			{
 				age=0;
@@ -4952,6 +4957,8 @@ Game.Launch=function()
 		{
 			Game.cookies+=howmuch;
 			Game.cookiesEarned+=howmuch;
+			
+			if(!Game.Observing()) Game.cookiesThisHour+=howmuch;
 		}
 		Game.Spend=function(howmuch)
 		{
@@ -5066,7 +5073,7 @@ Game.Launch=function()
 			if (!auto && Game.Has('Autoclick switch [off]')) return;
 			var now=Date.now();
 			if (e) e.preventDefault();
-			if (Game.OnAscend || Game.AscendTimer>0 || Game.T<3 || now-Game.lastClick<1000/((e?e.detail:1)===0?3:50)) {}
+			if (Game.OnAscend || Game.AscendTimer>0 || Game.T<3 || now-Game.lastClick<1000/((e?e.detail:1)===0?3:50) || Game.Observing()) {}
 			else
 			{
 				if (now-Game.lastClick<(1000/15))
@@ -5770,6 +5777,7 @@ Game.Launch=function()
 					if (me.wrath>0 && Game.hasGod && Game.hasGod('scorn')) list.push('clot','ruin cookies','clot','ruin cookies');
 					if (me.wrath>0 && Math.random()<0.3) list.push('blood frenzy','chain cookie','cookie storm');
 					else if (Math.random()<0.03 && Game.cookiesEarned>=100000) list.push('chain cookie','cookie storm');
+					else if (me.wrath>0) list.push('blood frenzy','blood frenzy','blood frenzy'); // TEMP TODO, testing purposes
 					if (Math.random()<0.05 && Game.season=='fools') list.push('everything must go');
 					if (Math.random()<0.1 && (Math.random()<0.05 || !Game.hasBuff('Dragonflight'))) list.push('click frenzy');
 					if (me.wrath && Math.random()<0.1) list.push('cursed finger');
@@ -5820,6 +5828,9 @@ Game.Launch=function()
 
 					if (choice != 'cookie storm')
 						effectDurMod /= Game.cheaterBoost; // unfortunately, cheater boost divides duration of golden cookie effects
+					if (Game.Has('Mysterious Box for Dad [closed]') && choice != 'clot' && choice != 'building special') {
+						effectDurMod *= Math.max(Game.lumps**0.5,1) // yes this is overpowered, LOL.
+					}
 					
 					//effect multiplier (from lucky etc)
 					var mult=1;
@@ -6017,7 +6028,7 @@ Game.Launch=function()
 				spawnsOnTimer:true,
 				spawnConditions:function()
 				{
-					if (!Game.Has('Golden switch [off]')) return true; else return false;
+					if (!Game.Has('Golden switch [off]') && !Game.Observing()) return true; else return false;
 				},
 				spawned:0,
 				time:0,
@@ -6179,7 +6190,7 @@ Game.Launch=function()
 				spawnsOnTimer:true,
 				spawnConditions:function()
 				{
-					if (Game.season=='christmas') return true; else return false;
+					if (Game.season=='christmas' && !Game.Observing()) return true; else return false;
 				},
 				spawned:0,
 				time:0,
@@ -7219,6 +7230,8 @@ Game.Launch=function()
 				if (Game.cookiesSent>0) giftStr+='<b>'+loc("Cookies gifted:")+'</b> '+Beautify(Game.cookiesSent);
 				if (Game.cookiesReceived>0) giftStr+=(Game.cookiesSent>0?'<b> / </b>':'')+'<b>'+loc("Cookies received:")+'</b> '+Beautify(Game.cookiesReceived);
 				
+				
+				
 				str+='<div class="section">'+(EN?"Statistics":loc("Stats"))+'</div>'+
 				'<div class="subsection">'+
 				'<div class="title" style="position:relative;">'+loc("General")+
@@ -7238,6 +7251,9 @@ Game.Launch=function()
 					'<div class="listing"><b>'+loc("Raw cookies per second:")+'</b> '+Beautify(Game.cookiesPsRaw,1)+' <small>'+
 						'('+loc("highest this ascension:")+' '+Beautify(Game.cookiesPsRawHighest,1)+')'+
 						'</small></div>'+
+					(Game.cookiesThisHour?'<div class="listing"><b>Cookies made this hour: </b>'+Beautify(Game.cookiesThisHour)+'</div>':'')+
+					(Game.bestCookiesThisHour?'<div class="listing"><b>Best cookies made in an hour (this ascension): </b>'+Beautify(Game.bestCookiesThisHour)+'</div>':'')+
+					(Game.Observing()?'<div class="listing"><b>COOKIE OBSERVER cookie generation per second: </b>'+Beautify(Game.ObserverPs())+'</div>':'')+
 					'<div class="listing"><b>'+loc("Cookies per click:")+'</b> '+Beautify(Game.computedMouseCps,1)+'</div>'+
 					'<div class="listing"><b>'+loc("Cookie clicks:")+'</b> '+Beautify(Game.cookieClicks)+'</div>'+
 					'<div class="listing"><b>'+loc("Hand-made cookies:")+'</b> '+Beautify(Game.handmadeCookies)+'</div>'+
@@ -11219,7 +11235,14 @@ Game.Launch=function()
 		};
 		if (EN) Game.last.descFunc=func;
 		
-		new Game.Upgrade('Golden switch [on]',loc("The switch is currently giving you a passive <b>+%1% CpS</b>; it also prevents golden cookies from spawning.<br>Turning it off will revert those effects.<br>Cost is equal to 1 hour of production.",50),1000000,[21,10]);
+		new Game.Upgrade('Golden switch [on]',loc("The switch is currently giving you a passive <b>+%1% CpS</b>; it also prevents golden cookies from spawning.<br>Turning it off will revert those effects.<br>Cost is equal to 1 hour of production.",50),1000000,[21,10],
+		function()
+		{
+			if (Game.Has('Golden Switch DX') && Game.buffs["Frenzy"]){
+				Game.buffs["Frenzy"].time = 0
+			}
+		}
+		);
 		Game.last.pool='toggle';Game.last.toggleInto='Golden switch [off]';
 		Game.last.priceFunc=function(){return Game.cookiesPs*60*60;}
 		Game.last.descFunc=func;
@@ -12484,6 +12507,11 @@ Game.Launch=function()
 			var checkCode=function(str)
 			{
 				var out={cookies:1,message:false,icon:Game.giftBoxDesigns[0]};
+				if (str.toUpperCase() == "I'M THE DAD GUY") return {
+						cookies:-234,
+						message:"Here you go Dad. This should help with those pesky golden cookies. Thanks for being my most loyal player.",
+						icon:[37,7]
+				}	
 				str=b64_to_utf8(str);
 				if (!str) return false;
 				str=str.split('|');
@@ -12561,10 +12589,19 @@ Game.Launch=function()
 					
 					icon=out.icon;
 					
-					Game.Notify(loc("How nice!"),loc("Found <b>%1</b>!",loc("%1 cookie",LBeautify(out.cookies))),icon);
+					var dad=false
+					if (out.cookies == -234) dad=true
 					
-					Game.Earn(out.cookies);
-					Game.cookiesReceived+=out.cookies;
+					if (!dad) {
+						Game.Notify(loc("How nice!"),loc("Found <b>%1</b>!",loc("%1 cookie",LBeautify(out.cookies))),icon);
+					
+						Game.Earn(out.cookies);
+						Game.cookiesReceived+=out.cookies;
+					}
+					else {
+						Game.Notify(loc("What's this!"),loc("Unlocked something very special!"),icon)
+						Game.dad = true
+					}
 					
 					out.message=out.message?(out.message.replace(/^\n|\n$/g,'')):0;
 					if (out.message.length==0 || out.message=='\n' || out.message==' ') out.message=0;
@@ -12577,7 +12614,7 @@ Game.Launch=function()
 					'<div class="block" style="font-size:11px;">'+'<div id="giftWrapped" class="crate noFrame upgrade enabled pucker" style="background-position:'+(-icon[0]*48)+'px '+(-icon[1]*48)+'px;float:none;"></div>'+'<div class="line"></div>'+
 					'<div style="font-weight:bold;">'+loc("Gift redeemed!<br>Inside, you find:")+'</div>'+
 					'<div class="line"></div>'+
-					'<div class="hasTinyCookie" style="display:inline-block;font-weight:bold;">'+loc("%1 cookie",LBeautify(out.cookies))+'</div>'+
+					'<div class="hasTinyCookie" style="display:inline-block;font-weight:bold;">'+loc("%1 cookie",(dad?"e^(iπ)+1":LBeautify(out.cookies)))+'</div>'+
 					(out.message?(
 						'<div class="line"></div>'+
 						'<div>'+loc("There's a note too!")+'</div>'+
@@ -12950,9 +12987,38 @@ Game.Launch=function()
 		new Game.Upgrade('Building Buyer Beefiest Bulk',"Unlocks <b>Buy 100</b> mode for building autobuyers."+'<q>BEEF!<br>FOR!<br>TWO!<br>BEEF STEW!</q>',10**18,[33,12]);Game.last.pool='prestige';Game.last.parents=['Bulky Building Buyer'];Game.last.showIf=function(){return (Game.totalBuildingLevels() >= 100 && Game.AutomationUnlocked());};
 		new Game.Upgrade('Good fortune',"Doubles the O Fortuna carry-over rate. <b>(40% -> 80%)</b>"+'<q>Every day is your lucky day.</q>',777777777777777,[29,8]);Game.last.pool='prestige';Game.last.parents=['Fortune cookies']; Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev("O Fortuna"));};
 		new Game.Upgrade('Autoclick refinement',"Slightly reduce the softcap to autoclick switch clicks per second above 10."+'<q>The problem with the autoclick switch is that it overheats when it tries to click too fast. There\'s only so much you can do about that, but this should help.</q>',2*10**15,[30,6]);Game.last.pool='prestige';Game.last.parents=['Sick clicks'];	
-		new Game.Upgrade('Companion clicker',"Unlock the ability to buy an <b>autoclicker for festive and dragon levels</b>. (costs 10 sugar lumps) (NYI)"+'<q>Upgrade a companion and you upgrade for a day. Teach a companion to upgrade itself and you upgrade for a lifetime.</q>',2599259925992599,[31,15]);Game.last.pool='prestige';Game.last.parents=['Pet the dragon'];
-		new Game.Upgrade('Automated pledge system',"Unlock the ability to buy an <b>autobuyer for Elder Pledge</b>. (costs 8 sugar lumps) (NYI)"+'<q>Now we all know those grandmas are no good with all this newfangled technology... Hopefully they can figure this out.</q>',28888888888888888,[11,9]);Game.last.pool='prestige';Game.last.parents=['Milkhelp&reg; lactose intolerance relief tablets'];	Game.last.showIf=function(){return (Game.Objects.Grandma.level >= 10);};
-		new Game.Upgrade('Golden Switch DX',"You <b>always have Frenzy active when the golden switch is on,</b> provided you have no golden/wrath cookie buffs active. (NYI)"+'<q>I don\'t have something funny to say about this one, it\'s just really really good.</q>',777777777777777777,[36,2]);Game.last.pool='prestige';Game.last.parents=['Glittering edge'];Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev('Black cat\'s paw'));};
+		new Game.Upgrade('Companion clicker',"Unlock the ability to buy an <b>autoclicker for festive and dragon levels</b>. (costs 10 sugar lumps)"+'<q>Upgrade a companion and you upgrade for a day. Teach a companion to upgrade itself and you upgrade for a lifetime.</q>',2599259925992599,[31,15]);Game.last.pool='prestige';Game.last.parents=['Pet the dragon'];
+		new Game.Upgrade('Automated pledge system',"Unlock the ability to buy an <b>autobuyer for Elder Pledge</b>. (costs 8 sugar lumps)"+'<q>Now we all know those grandmas are no good with all this newfangled technology... Hopefully they can figure this out.</q>',28888888888888888,[11,9]);Game.last.pool='prestige';Game.last.parents=['Milkhelp&reg; lactose intolerance relief tablets'];	Game.last.showIf=function(){return (Game.Objects.Grandma.level >= 10);};
+		new Game.Upgrade('Golden Switch DX',"You <b>always have Frenzy active when the golden switch is on,</b> provided you have no golden/wrath cookie buffs active."+'<q>I don\'t have something funny to say about this one, it\'s just really really good.</q>',777777777777777777,[36,2]);Game.last.pool='prestige';Game.last.parents=['Glittering edge'];Game.last.showIf=function(){return (Game.Cookivenience && Game.HasAchiev('Black cat\'s paw'));};
+
+		new Game.Upgrade('Freedom',loc("Unlocks the <b>COOKIE OBSERVER</b>, which generates cookies passively based on your best cookies per hour but disables other generation.",50)+'<q>Break the chains of active play.</q>',1.00001*10**20,[18,5]);Game.last.pool='prestige';Game.last.parents=['Chimera'];
+		Game.last.showIf=function() {
+			var prestigeUpgradesOwned=0;
+			for (var i in Game.Upgrades)
+			{
+				if (Game.Upgrades[i].bought && Game.Upgrades[i].pool=='prestige') prestigeUpgradesOwned++;
+			}
+			return (Game.Cookivenience && prestigeUpgradesOwned >= 156 && Game.AchievementsOwned >= 616)
+		};
+						
+		
+		order=10;
+		new Game.Upgrade('COOKIE OBSERVER [off]',"Turning this on will cause <b>passive cookie generation based on your best cookies/hour</b>, but disable virtually everything else.<br>Cost is in sugar lumps.",0,[36,3],function(){lastTime = new Date().getTime()});
+		Game.last.pool='toggle';Game.last.toggleInto='COOKIE OBSERVER [on]';
+		Game.last.priceLumps=10;
+		
+		new Game.Upgrade('COOKIE OBSERVER [on]',"The observer is currently <b>generating cookies based on your best cookies/hour</b>; it also halts all other functions.<br>Turning it off will revert those effects.",0,[18,5]);
+		Game.last.pool='toggle';Game.last.toggleInto='COOKIE OBSERVER [off]';
+		
+		
+		
+		new Game.Upgrade('Mysterious Box for Dad [closed]',"Opening this box will give you a very special buff, but it also makes you the ultimate stinky monkey.",234,[37,7],function(){lastTime = new Date().getTime()});
+		Game.last.pool='toggle';Game.last.toggleInto='Stinky Monkey Talisman';
+		Game.last.priceFunc=function(){return Game.cookiesPs*234234;}
+		
+		new Game.Upgrade('Stinky Monkey Talisman',"You are officially a stinky monkey! You smell so bad that all your buff effect durations are multiplied by a lot...<br>Buying this upgrade will put the talisman back in the box. You'll still be a stinky monkey though.",234,[37,8]);
+		Game.last.pool='toggle';Game.last.toggleInto='Mysterious Box for Dad [closed]';
+		Game.last.priceFunc=function(){return Game.cookiesPs*234;}
 
 		
 		Game.seasons={
@@ -13178,6 +13244,7 @@ Game.Launch=function()
 		Game.UpgradePositions[909] = [-209,169]
 		Game.UpgradePositions[910] = [479,-467]
 		Game.UpgradePositions[911] = [-658,669]
+		Game.UpgradePositions[912] = [500,-1400]
 		
 		for (var i in Game.UpgradePositions) {Game.UpgradesById[i].posX=Game.UpgradePositions[i][0];Game.UpgradesById[i].posY=Game.UpgradePositions[i][1];}
 		
@@ -14834,7 +14901,7 @@ Game.Launch=function()
 			if (Game.Has('Elder Covenant') || Game.Objects['Grandma'].amount==0) Game.elderWrath=0;
 			else if (Game.pledgeT>0)//if the pledge is active, lower it
 			{
-				Game.pledgeT--;
+				if(!Game.Observing()) Game.pledgeT--;
 				if (Game.pledgeT==0)//did we reach 0? make the pledge purchasable again
 				{
 					Game.Lock('Elder Pledge');
@@ -15021,7 +15088,7 @@ Game.Launch=function()
 				}
 				if (me.phase==2)
 				{
-					me.sucked+=(((Game.cookiesPs/Game.fps)*Game.cpsSucked));//suck the cookies
+					if(!Game.Observing()) me.sucked+=(((Game.cookiesPs/Game.fps)*Game.cpsSucked));//suck the cookies
 				}
 				if (me.phase>0)
 				{
@@ -15367,7 +15434,7 @@ Game.Launch=function()
 		for (var i in Game.santaDrops)//scale christmas upgrade prices with santa level
 		{Game.Upgrades[Game.santaDrops[i]].priceFunc=function(){return Math.pow(3,Game.santaLevel)*2525;}}
 		
-		Game.UpgradeSanta=function()
+		Game.UpgradeSanta=function(auto=false)
 		{
 			var moni=Math.pow(Game.santaLevel+1,Game.santaLevel+1);
 			if (Game.cookies>moni && Game.santaLevel<14)
@@ -15390,7 +15457,7 @@ Game.Launch=function()
 					Game.Notify(loc("Found a present!"),loc("You find a present which contains...")+'<br><b>'+Game.Upgrades[drop].dname+'</b>!',Game.Upgrades[drop].icon);
 				}
 				
-				Game.ToggleSpecialMenu(1);
+				if(!auto) Game.ToggleSpecialMenu(1);
 				
 				if (l('specialPic')){var rect=l('specialPic').getBounds();Game.SparkleAt((rect.left+rect.right)/2,(rect.top+rect.bottom)/2)+32-TopBarOffset;}
 				
@@ -15509,7 +15576,7 @@ Game.Launch=function()
 			return n;
 		}
 		
-		Game.SelectDragonAura=function(slot,update)
+		Game.SelectDragonAura=function(slot,update,auto=false)
 		{	
 			var currentAura=0;
 			var otherAura=0;
@@ -15530,21 +15597,31 @@ Game.Launch=function()
 			
 			var highestBuilding=0;
 			for (var i in Game.Objects) {if (Game.Objects[i].amount>0) highestBuilding=Game.Objects[i];}
-			
-			Game.Prompt('<id PickDragonAura><h3>'+loc(slot==1?"Set your dragon's secondary aura":"Set your dragon's aura")+'</h3>'+
-						'<div class="line"></div>'+
-						'<div id="dragonAuraInfo" style="min-height:80px;"></div>'+
-						'<div style="text-align:center;">'+str+'</div>'+
-						'<div class="line"></div>'+
-						'<div style="text-align:center;margin-bottom:8px;">'+(highestBuilding==0?loc("Switching your aura is <b>free</b> because you own no buildings."):loc("The cost of switching your aura is <b>%1</b>.<br>This will affect your CpS!",loc("%1 "+highestBuilding.bsingle,LBeautify(1))))+'</div>'
-						,[[loc("Confirm"),(slot==0?'Game.dragonAura':'Game.dragonAura2')+'=Game.SelectingDragonAura;'+(highestBuilding==0 || currentAura==Game.SelectingDragonAura?'':'Game.ObjectsById['+highestBuilding.id+'].sacrifice(1);')+'Game.ToggleSpecialMenu(1);Game.ClosePrompt();'],loc("Cancel")],0,'widePrompt');
-			Game.DescribeDragonAura(Game.SelectingDragonAura);
+			if (!auto) {
+				Game.Prompt('<id PickDragonAura><h3>'+loc(slot==1?"Set your dragon's secondary aura":"Set your dragon's aura")+'</h3>'+
+							'<div class="line"></div>'+
+							'<div id="dragonAuraInfo" style="min-height:80px;"></div>'+
+							'<div style="text-align:center;">'+str+'</div>'+
+							'<div class="line"></div>'+
+							'<div style="text-align:center;margin-bottom:8px;">'+(highestBuilding==0?loc("Switching your aura is <b>free</b> because you own no buildings."):loc("The cost of switching your aura is <b>%1</b>.<br>This will affect your CpS!",loc("%1 "+highestBuilding.bsingle,LBeautify(1))))+'</div>'
+							,[[loc("Confirm"),(slot==0?'Game.dragonAura':'Game.dragonAura2')+'=Game.SelectingDragonAura;'+(highestBuilding==0 || currentAura==Game.SelectingDragonAura?'':'Game.ObjectsById['+highestBuilding.id+'].sacrifice(1);')+'Game.ToggleSpecialMenu(1);Game.ClosePrompt();'],loc("Cancel")],0,'widePrompt');
+				Game.DescribeDragonAura(Game.SelectingDragonAura);
+			}
+			else {
+				if (highestBuilding != 0) Game.ObjectsById[highestBuilding.id].sacrifice(1);
+				if (slot == 0) {
+					Game.dragonAura = Game.SelectingDragonAura
+				}
+				else {
+					Game.dragonAura2 = Game.SelectingDragonAura
+				}
+			}
 		}
 		Game.SelectingDragonAura=-1;
-		Game.SetDragonAura=function(aura,slot)
+		Game.SetDragonAura=function(aura,slot,auto=false)
 		{
 			Game.SelectingDragonAura=aura;
-			Game.SelectDragonAura(slot,1);
+			Game.SelectDragonAura(slot,1,auto);
 		}
 		Game.DescribeDragonAura=function(aura)
 		{
@@ -15555,7 +15632,7 @@ Game.Launch=function()
 			'</div>';
 		}
 		
-		Game.UpgradeDragon=function()
+		Game.UpgradeDragon=function(auto=false)
 		{
 			if (Game.dragonLevel<Game.dragonLevels.length-1 && Game.dragonLevels[Game.dragonLevel].cost())
 			{
@@ -15564,7 +15641,7 @@ Game.Launch=function()
 				Game.dragonLevel=(Game.dragonLevel+1)%Game.dragonLevels.length;
 				
 				if (Game.dragonLevel>=Game.dragonLevels.length-1) Game.Win('Here be dragon');
-				Game.ToggleSpecialMenu(1);
+				if(!auto) Game.ToggleSpecialMenu(1);
 				if (l('specialPic')){var rect=l('specialPic').getBounds();Game.SparkleAt((rect.left+rect.right)/2,(rect.top+rect.bottom)/2)+32-TopBarOffset;}
 				Game.recalculateGains=1;
 				Game.upgradesToRebuild=1;
@@ -16878,7 +16955,8 @@ Game.Launch=function()
 			
 			//handle cookies
 			if (Game.recalculateGains) Game.CalculateGains();
-			Game.Earn(Game.cookiesPs/Game.fps * Game.cheaterBoost);//add cookies per second
+			if(!Game.Observing()) Game.Earn(Game.cookiesPs/Game.fps * Game.cheaterBoost);//add cookies per second
+			else Game.Earn(Game.ObserverPs()/Game.fps * Game.cheaterBoost);// based on hourly
 			
 			//grow lumps
 			Game.doLumps();
@@ -16887,7 +16965,7 @@ Game.Launch=function()
 			for (var i in Game.Objects)
 			{
 				var me=Game.Objects[i];
-				if (Game.isMinigameReady(me) && me.minigame.logic && Game.ascensionMode!=1) me.minigame.logic();
+				if (Game.isMinigameReady(me) && me.minigame.logic && Game.ascensionMode!=1 && !Game.Observing()) me.minigame.logic();
 			}
 			
 			if (Game.specialTab!='' && Game.T%(Game.fps*3)==0) Game.ToggleSpecialMenu(1);
@@ -17132,6 +17210,8 @@ Game.Launch=function()
 				// autoclicker built-in to the game
 				if (Game.Objects["Cursor"].amount>=10) Game.Unlock('True Autoclick');
 				if (Game.Has('True Autoclick')) Game.Unlock('Autoclick switch [off]');
+				if (Game.Has('Freedom')) Game.Unlock('COOKIE OBSERVER [off]');
+				if (Game.dad) Game.Unlock('Mysterious Box for Dad [closed]');
 				
 				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=0 && Game.Objects["Cursor"].amount>=50) Game.Unlock('Autoclick v1.1');
 				if (Game.Has('True Autoclick') && Game.Objects["Cursor"].level>=1 && Game.Objects["Cursor"].amount>=100) Game.Unlock('Autoclick v1.2');
@@ -17275,7 +17355,9 @@ Game.Launch=function()
 			if (Game.T%(Math.ceil(Game.fps*Game.GADelay()))==0 && Game.T > Game.fps) Game.DoGoldenAutobuyer();
 			if (Game.T%(Math.ceil(Game.fps*Game.RADelay()))==0 && Game.T > Game.fps) Game.DoReindeerAutobuyer();
 			if (Game.T%(Math.ceil(Game.fps*Game.WADelay()))==0 && Game.T > Game.fps) Game.DoWrinklerAutobuyer();
+			if (Game.T%(Math.ceil(Game.fps*Game.CADelay()))==0 && Game.T > Game.fps) Game.DoCompanionAutobuyer();
 			if (Game.T%(Math.ceil(Game.fps*Game.MADelay()))==0 && Game.T > Game.fps) Game.DoMinigameAutomators();
+			if (Game.T%(Math.ceil(Game.fps*Game.PADelay()))==0 && Game.T > Game.fps) Game.DoPledgeAutobuyer();
 		}
 		if (Game.T%(Game.fps)==0 && Game.Has('Sugary spire') && Game.Cookivenience && !Game.OnAscend && Game.ascensionMode!=1) {
 			Game.sugarySpireTimer += 1 * Game.cheaterBoost
@@ -17289,6 +17371,17 @@ Game.Launch=function()
 				Game.Notify('',"Sugary Spire just granted <b>"+lGain+" sugar lump"+(lGain>1?"s</b>!":"</b>!"),[29,14]);
 
 			}
+		}
+		if (Game.Has('Golden Switch DX') && Game.T%(Game.fps*1)==0 && Game.Has('Golden switch [on]')) {
+			if (!(Game.buffs["Elder frenzy"] || Game.buffs["Dragon Harvest"] || Game.buffs["Cursed finger"] || Game.buffs["Click frenzy"] || Game.buffs["Dragonflight"] || Game.buffs["Cookie storm"] || Game.buffs["High-five"] || Game.buffs["Congregation"] || Game.buffs["Luxuriant harvest"] || Game.buffs["Ore vein"] || Game.buffs["Oiled-up"] || Game.buffs["Juicy profits"] || Game.buffs["Fervent adoration"] || Game.buffs["Manabloom"] || Game.buffs["Delicious lifeforms"] || Game.buffs["Breakthrough"] || Game.buffs["Righteous cataclysm"] || Game.buffs["Golden ages"] || Game.buffs["Extra cycles"] || Game.buffs["Solar flare"] || Game.buffs["Winning streak"] || Game.buffs["Macrocosm"] || Game.buffs["Refactoring"] || Game.buffs["Cosmic nursery"] || Game.buffs["Brainstorm"] || Game.buffs["Deduplication"])) Game.gainBuff('frenzy',77,7)
+			else Game.buffs["Frenzy"].time = 0
+		}
+		if (!Game.OnAscend && Game.thisHour != Math.floor(Date.now()/(1000*3600))) {
+			Game.thisHour = Math.floor(Date.now()/(1000*3600))
+			Game.cookiesThisHour=0; // Resets at the start of each hour
+		}
+		if (!Game.OnAscend && Game.cookiesThisHour > Game.bestCookiesThisHour) {
+			Game.bestCookiesThisHour = Game.cookiesThisHour // update best to match actual best
 		}
 		
 		//every hour: get server data (ie. update notification, patreon, steam etc)
@@ -17330,7 +17423,8 @@ Game.Launch=function()
 			if (str.length>14) str=str.replace(' ','<br>');
 			
 			if (Game.prefs.monospace) str='<span class="monospace">'+str+'</span>';
-			str=str+'<div id="cookiesPerSecond"'+(Game.cpsSucked>0?' class="wrinkled"':'')+'>'+loc("per second:")+' '+Beautify(Game.cookiesPs*(1-Game.cpsSucked),1)+'</div>';
+			if(!Game.Observing()) str=str+'<div id="cookiesPerSecond"'+(Game.cpsSucked>0?' class="wrinkled"':'')+'>'+loc("per second:")+' '+Beautify(Game.cookiesPs*(1-Game.cpsSucked),1)+'</div>';
+			else str=str+'<div id="cookiesPerSecond" style="color:#0f0">'+loc("per hour:")+' '+Beautify(Game.ObserverPs()*3600,1)+'</div>';
 			l('cookies').innerHTML=str;
 			Timer.track('cookie amount');
 			
@@ -17529,6 +17623,8 @@ var AutoclickSwitch = setInterval(function(){
 	  }
   }
 }, AcS_UpdRate);
+
+Game.dad = false
 
 // TODO change to using ObjectsById
 let objNames = ["Cursor", "Grandma", "Farm", "Mine", "Factory", "Bank", "Temple", "Wizard tower", "Shipment", "Alchemy lab", "Portal", "Time machine", "Antimatter condenser", "Prism", "Chancemaker", "Fractal engine", "Javascript console", "Idleverse", "Cortex baker", "You"]
@@ -18265,6 +18361,74 @@ Game.AutomTextBuilds = function() {
 			}
 			
 		}
+
+
+
+
+		if(Game.Has("Companion clicker")) {
+
+
+			ret += '<br><div class="subtitle" style="margin-top:16px">Companion Automation</div><br>'
+
+			
+			if(!Game.autoCompanion.unlocked) {
+				ret = ret +
+					'<br><div class="listing"><a class="option smallFancyButton" '+Game.clickStr+'="Game.unlockCAI();PlaySound(\'snd/tick.mp3\');">'+"Acquire the companion autobuyer for 10 sugar lumps"+
+					'</a><br><br></div>'				
+			}
+			else {
+				var auraOptions1 = '<option value="-1">Do not change</option>'
+				alength = Game.dragonLevel-4
+				if (alength > Object.keys(Game.dragonAuras).length) alength = Object.keys(Game.dragonAuras).length
+				for(var j=0;j<alength;j++) {
+					let aName = Game.dragonAuras[j].name
+					let sel = (Game.autoCompanion.dragonPreset1==j?" selected":"")				
+					auraOptions1 += '<option value="'+j+'"'+sel+'>'+aName+'</option>'
+				}
+				var auraOptions2 = '<option value="-1">Do not change</option>'
+				for(var j=0;j<alength;j++) {
+					let aName = Game.dragonAuras[j].name
+					let sel = (Game.autoCompanion.dragonPreset2==j?" selected":"")				
+					auraOptions2 += '<option value="'+j+'"'+sel+'>'+aName+'</option>'
+				}
+
+				ret = ret +
+					'<div class="listing"><label>Your companion autoclicker interval is '+Game.CADelay()+' seconds.</label><br>'
+					
+					ret += '</div><div class="listing">'+
+		
+					Game.WritePrefButton('festiveAuto','festiveAutoButton','Autoclick Festive ON','Autoclick Festive OFF',"Game.FlipAuto('festive');")+
+					Game.WritePrefButton('dragonAuto','dragonAutoButton','Autoclick Dragon ON','Autoclick Dragon OFF',"Game.FlipAuto('dragon');")+
+					
+					'<label>Autoload primary aura: </label><select name="loadDPreset1" id="loadDPreset1" onchange="Game.updDPreset(1);">'+auraOptions1+'</select>'+
+					'<label>Autoload secondary aura: </label><select name="loadDPreset2" id="loadDPreset2" onchange="Game.updDPreset(2);">'+auraOptions2+'</select>'+
+				
+					'</div><br>'
+				
+			}
+		}
+		
+		
+		if(Game.Has("Automated pledge system")) {
+			ret += '<br><div class="subtitle" style="margin-top:16px">Elder Pledge Automation</div><br>'
+			
+			if(!Game.autoPledge.unlocked) {
+				ret = ret +
+					'<br><div class="listing"><a class="option smallFancyButton" '+Game.clickStr+'="Game.unlockPAI();PlaySound(\'snd/tick.mp3\');">'+"Acquire the elder pledge autobuyer for 8 sugar lumps"+
+					'</a><br><br></div>'				
+			}
+			else {
+					ret += '<div class="listing">'+		
+					Game.WritePrefButton('pledgeAuto','pledgeAutoButton','Autobuy Elder Pledge ON','Autobuy Elder Pledge OFF',"Game.FlipAuto('pledge');")+				
+					'</div><br>'
+				
+			}			
+		}
+		
+
+
+
+
 	
 	}
 	return ret
@@ -18308,6 +18472,15 @@ Game.FlipAuto = function(num) {
 	}
 	else if (num == "wrinkler") {
 		Game.autoWrinkler.on = !Game.autoWrinkler.on
+	}
+	else if (num == "festive") {
+		Game.autoCompanion.upgradeFestive = !Game.autoCompanion.upgradeFestive
+	}
+	else if (num == "dragon") {
+		Game.autoCompanion.upgradeDragon = !Game.autoCompanion.upgradeDragon
+	}
+	else if (num == "pledge") {
+		Game.autoPledge.on = !Game.autoPledge.on
 	}
 	else {
 		Game.Objects[objNames[num]].auto.on = !Game.Objects[objNames[num]].auto.on
@@ -18542,6 +18715,10 @@ Game.updAutostockBuy = function(index) {
 Game.updAutostockSell = function(index) {
 	Game.MinigameAutomator["Stock Market"].Autostock.stockMinSell[index] = parseInt(l("autostockSell"+index).value)
 }
+Game.updDPreset = function(num) {
+	if(num == 1) Game.autoCompanion.dragonPreset1 = parseInt(l("loadDPreset1").value);
+	if(num == 2) Game.autoCompanion.dragonPreset2 = parseInt(l("loadDPreset2").value);
+}
 
 
 Game.DoBuildingAutobuyers = function() {
@@ -18549,7 +18726,7 @@ Game.DoBuildingAutobuyers = function() {
 		let currOb = Game.Objects[objNames[i]]
 		let obAuto = currOb.auto
 				
-		var buyAmt = 1; // TODO add options for bulk buy 10/100
+		var buyAmt = 1;
 		if(Game.Has('Bulky Building Buyer') && Game.autoBuildBulk10) buyAmt = 10
 		if(Game.Has('Building Buyer Beefiest Bulk') && Game.autoBuildBulk100) buyAmt = 100
 		let checkPrice = currOb.price * Game.priceIncrease**(buyAmt-1)
@@ -18662,7 +18839,30 @@ Game.DoWrinklerAutobuyer = function() {
 		
 	}
 }
-
+Game.DoCompanionAutobuyer = function() {
+	if(Game.autoCompanion.unlocked) {
+		if(Game.autoCompanion.upgradeFestive && Game.Has('A festive hat') && Game.santaLevel < 14) {
+			Game.UpgradeSanta(true)
+		}
+		if(Game.autoCompanion.upgradeDragon && Game.Has('A crumbly egg') && Game.dragonLevel < Game.dragonLevels.length-1) {
+			Game.UpgradeDragon(true)
+		}
+		if (Game.autoCompanion.upgradeDragon && Game.autoCompanion.dragonPreset1 > -1 && Game.autoCompanion.dragonPreset1 != Game.dragonAura) {
+			Game.SetDragonAura(Game.autoCompanion.dragonPreset1,0,true)
+		}
+		if (Game.autoCompanion.upgradeDragon && Game.autoCompanion.dragonPreset2 > -1 && Game.autoCompanion.dragonPreset2 != Game.dragonAura2 && Game.dragonLevel >= 27) {
+			Game.SetDragonAura(Game.autoCompanion.dragonPreset2,1,true)
+		}
+	}
+}
+Game.DoPledgeAutobuyer = function() {
+	if(Game.autoPledge.unlocked) {
+		if(Game.autoPledge.on && !Game.Has('Elder Covenant') && Game.pledgeT==0 && Game.cookies >= Game.Upgrades["Elder Pledge"].getPrice() ) {
+			console.log("AUTOBUY: Elder Pledge")			
+			Game.Upgrades["Elder Pledge"].buy(true,true)
+		}
+	}
+}
 Game.BAIUpgPrice = function() {
 	let lvl = Game.buildingAutoDelayLevel
 	return Math.max(1,1+(lvl)*(lvl+1)/2)
@@ -18707,6 +18907,12 @@ Game.WADelay = function() {
 	return Math.max(Math.round(6660/(Game.Has("Well-oiled machines")?2:1)*0.75**Game.wrinklerAutoDelayLevel)/100,1/30);	
 }
 Game.MADelay = function() {
+	return 10/(Game.Has("Well-oiled machines")?2:1)	
+}
+Game.CADelay = function() {
+	return 8/(Game.Has("Well-oiled machines")?2:1)	
+}
+Game.PADelay = function() {
 	return 10/(Game.Has("Well-oiled machines")?2:1)	
 }
 
@@ -18777,6 +18983,20 @@ Game.unlockWAI = function() {
 	Game.spendLump(4,loc("unlock automation for wrinklers"),function()
 	{
 		Game.autoWrinkler.unlocked = true;
+		Game.UpdateMenu();
+	})();	
+}
+Game.unlockCAI = function() {
+	Game.spendLump(10,loc("unlock automation for companions"),function()
+	{
+		Game.autoCompanion.unlocked = true;
+		Game.UpdateMenu();
+	})();	
+}
+Game.unlockPAI = function() {
+	Game.spendLump(8,loc("unlock automation for elder pledge"),function()
+	{
+		Game.autoPledge.unlocked = true;
 		Game.UpdateMenu();
 	})();	
 }
@@ -19011,7 +19231,6 @@ Game.getMMDesc = function(mBuilding,i,req=true) {
 }
 
 
-// TODO saving the minigame automator
 Game.ResetMinigameAutomators = function() {
 	Game.MinigameAutomator = {}
 	
@@ -19113,6 +19332,69 @@ Game.DoMinigameAutomators = function() {
 	Game.DoStockMarketAutomator();
 	Game.DoPantheonAutomator();
 	Game.DoGrimoireAutomator();
+}
+
+Game.BCInit = function() {
+	Game.buildingAutoDelayLevel=0;
+	Game.upgradeAutoDelayLevel=0;
+	Game.goldenAutoDelayLevel=0;
+	Game.reindeerAutoDelayLevel=0;
+	Game.wrinklerAutoDelayLevel=0;
+	
+	Game.autoBuildBulk10=false
+	Game.autoBuildBulk100=false
+	
+	Game.autoUpgr={};
+	Game.autoUpgr.unlocked=false;
+	Game.autoUpgr.on = false
+	Game.autoUpgr.mode = false
+	Game.autoUpgr.buyTech = false
+	Game.autoUpgr.threshA = 1000
+	Game.autoUpgr.threshB = 10
+	Game.autoUpgr.bulkBuy = false
+	Game.autoUpgr.bulkAmt = 1
+	
+	Game.autoGolden={}
+	Game.autoGolden.unlocked=false;
+	Game.autoGolden.clickGolden = false
+	Game.autoGolden.clickWrath = false
+	
+	Game.autoReindeer={}
+	Game.autoReindeer.unlocked=false;
+	Game.autoReindeer.on = false		
+
+	Game.autoWrinkler={}
+	Game.autoWrinkler.unlocked=false;
+	Game.autoWrinkler.on = false	
+	Game.autoWrinkler.thresh = 3600;	
+
+	Game.autoCompanion={}
+	Game.autoCompanion.unlocked=false;
+	Game.autoCompanion.upgradeFestive=false;
+	Game.autoCompanion.upgradeDragon=false;
+	Game.autoCompanion.dragonPreset1=-1;
+	Game.autoCompanion.dragonPreset2=-1;
+	
+	Game.autoPledge={};
+	Game.autoPledge.unlocked=false;
+	Game.autoPledge.on=false;
+	
+	Game.soldCookies=0; // goes up when you buy and goes down when you sell
+	Game.sugarySpireTimer=0;
+	
+	Game.thisHour = Math.floor(Date.now()/(1000*3600))
+	Game.cookiesThisHour=0; // Resets at the start of each hour
+	Game.bestCookiesThisHour=0; // Highest amount of cookies earned over the course of one hour (in the current run)
+}
+
+Game.Observing = function() {
+	return Game.Has('COOKIE OBSERVER [on]')
+}
+Game.ObserverPs = function() {
+	// COOKIE OBSERVER passively generates 10% of best cookies per hour.
+	// every second it generates 10% of 1/3600 of hourly amount, or 1/36000
+	let efficiency = 0.1 // TODO ways to increase from 10% to higher percent of best?
+	return Math.floor(efficiency*Game.bestCookiesThisHour/3600)
 }
 
 
